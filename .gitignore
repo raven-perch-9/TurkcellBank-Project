@@ -1,0 +1,13 @@
+# Ignore global junk
+.vs/
+*.suo
+*.user
+
+# Ignore all project build outputs
+bin/
+obj/
+*.log
+
+# Ignore user secrets & config
+appsettings.Development.json
+*.swp
