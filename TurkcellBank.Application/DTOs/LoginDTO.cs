@@ -4,7 +4,8 @@ namespace TurkcellBank.Application.DTOs
 {
     public class LoginDTO
     {
-        public string Email { get; set; } = null!;
+        // Identifier refers to either the username or the email adress.
+        public string Identifier { get; set; } = null!;
         public string PasswordHash { get; set; } = null!;
     }
 }

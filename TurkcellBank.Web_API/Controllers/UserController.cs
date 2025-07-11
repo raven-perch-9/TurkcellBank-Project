@@ -62,9 +62,11 @@ namespace TurkcellBank.Web_API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDTO dto)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            var user = await _context.Users.FirstOrDefaultAsync(u => 
+                u.Email == dto.Identifier || u.Username == dto.Identifier);
+
             if (user == null)
-                return Unauthorized("Invalid email or password.");
+                return Unauthorized("Invalid email/username or password.");
 
             bool isPasswordValid = dto.PasswordHash == user.PasswordHash;
             if (!isPasswordValid)
@@ -81,7 +83,7 @@ namespace TurkcellBank.Web_API.Controllers
             var userIDClaim = User.FindFirst("user_id")?.Value;
             if (string.IsNullOrEmpty(userIDClaim))
                 return Unauthorized("Token does not contain user ID");
-            var user = await _context.Users.FindAsync(Guid.Parse(userIDClaim));
+            var user = await _context.Users.FindAsync(int.Parse(userIDClaim));
             if (user == null)
                 return NotFound("User not found.");
             return Ok(new
