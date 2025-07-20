@@ -77,6 +77,7 @@ namespace TurkcellBank.Web_API.Controllers
 
             return Ok(new { token });
         }
+        [Authorize]
         [HttpGet("Get User Data")]
         public async Task<IActionResult> GetProfile()
         {
@@ -105,23 +106,29 @@ namespace TurkcellBank.Web_API.Controllers
             if (string.IsNullOrEmpty(userIdClaim))
                 return Unauthorized("Invalid token: missing user_id");
 
-            var user = await _context.Users.FindAsync(Guid.Parse(userIdClaim));
+            var user = await _context.Users.FindAsync(int.Parse(userIdClaim));
             if (user == null)
                 return NotFound("User not found");
 
             // Update fields
-            user.FullName = dto.FullName;
-            user.Email = dto.Email;
-            user.PasswordHash = dto.PasswordHash;
+            if (!string.IsNullOrWhiteSpace(dto.FullName))
+                user.FullName = dto.FullName;
+
+            if (!string.IsNullOrWhiteSpace(dto.Email))
+                user.Email = dto.Email;
+
+            if (!string.IsNullOrWhiteSpace(dto.Username))
+                user.Username = dto.Username;
 
             if (!string.IsNullOrWhiteSpace(dto.PasswordHash))
             {
-                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.PasswordHash);
+                // Reminder: this is raw password, hash it properly before production
+                user.PasswordHash = dto.PasswordHash;
             }
 
             _context.Users.Update(user);
             await _context.SaveChangesAsync();
-
+            
             return Ok(new { message = "Profile updated successfully." });
         }
     }

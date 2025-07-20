@@ -30,6 +30,8 @@ namespace TurkcellBank.Infrastructure.Services
                 new Claim("email", user.Email),
                 new Claim("role", "User"),
                 new Claim("created_at", new DateTimeOffset(user.CreatedAt).ToUnixTimeSeconds().ToString()),
+                new Claim(JwtRegisteredClaimNames.Iss, _config["Jwt:Issuer"]),
+                new Claim(JwtRegisteredClaimNames.Aud, _config["Jwt:Audience"]),
                 new Claim(JwtRegisteredClaimNames.Exp, new DateTimeOffset(DateTime.UtcNow.AddHours(1)).ToUnixTimeSeconds().ToString())
             };
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));

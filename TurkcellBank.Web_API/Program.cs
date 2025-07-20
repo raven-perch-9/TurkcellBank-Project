@@ -66,6 +66,15 @@ builder.Services
             NameClaimType = "user_id"
         };
     });
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 var app = builder.Build();
 
 app.UseDeveloperExceptionPage();
