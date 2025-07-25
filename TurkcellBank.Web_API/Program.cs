@@ -68,9 +68,9 @@ builder.Services
     });
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AllowBlazorClient", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("https://localhost:7000")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -83,10 +83,20 @@ app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
+app.UseCors("AllowBlazorClient");
+
 app.UseAuthentication();
 
 app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+try
+{
+    app.Run();
+}
+catch (Exception ex)
+{
+    Console.WriteLine("Startup error: " + ex);
+    throw;
+}

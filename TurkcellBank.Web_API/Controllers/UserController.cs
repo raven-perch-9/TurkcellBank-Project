@@ -131,5 +131,30 @@ namespace TurkcellBank.Web_API.Controllers
             
             return Ok(new { message = "Profile updated successfully." });
         }
+        [Authorize]
+        [HttpDelete("delete")]
+        public async Task<IActionResult> SoftDeleteUser()
+        {
+            var userIdClaim = User.FindFirst("user_id")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized("Invalid token: missing user_id");
+
+            if (!int.TryParse(userIdClaim, out int userId))
+                return BadRequest("Invalid user ID format.");
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+                return NotFound("User not found.");
+
+            if (!user.IsActive)
+                return BadRequest("User is already deactivated.");
+
+            user.IsActive = false;
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "User has been deleted" });
+        }
+
     }
 }
