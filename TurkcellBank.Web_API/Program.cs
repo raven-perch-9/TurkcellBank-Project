@@ -15,7 +15,6 @@ builder.Services.AddScoped<IJwtService, JwtService>();
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-
 // Swagger Authorize Function
 builder.Services.AddSwaggerGen(c =>
 {
@@ -47,7 +46,8 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
-
+//PasswordHashing Service
+builder.Services.AddScoped<IPasswordService, PasswordService>();
 // Validation of the Token by ASP.NET
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

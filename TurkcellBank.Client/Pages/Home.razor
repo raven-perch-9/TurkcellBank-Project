@@ -1,7 +1,116 @@
-﻿@page "/"
+﻿@page "/home"
+@using MudBlazor
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject IJSRuntime JS
 
-<PageTitle>Home</PageTitle>
+<MudLayout>
+    <!-- TOP BAR WITH LOGO -->
+    <MudAppBar Elevation="0" Style="background-color:#154ba3; height:130px;">
+        <MudImage Src="images/Female_Logo.jpg" Alt="Turkcell Logo" Width="180" Class="ml-4" />
+        <MudSpacer />
+        <MudButton Variant="Variant.Outlined" Color="Color.Warning" OnClick="@Logout" Class="mr-4">Logout</MudButton>
+    </MudAppBar>
 
-<h1>Hello, world!</h1>
+    <!-- MAIN CONTENT -->
+    <MudMainContent Style="background-color:white; padding-top:120px;">
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="p-6">
 
-Welcome to your new app.
+            <!-- WELCOME HEADER -->
+            <MudPaper Class="mx-auto mb-6" Style="background:white; padding:20px; border-radius:16px; max-width:600px;">
+                <MudText Typo="Typo.h2" Align="Align.Center" Style="color:black;">
+                    Welcome, Kerem Günay!
+                </MudText>
+            </MudPaper>
+
+            <MudGrid GutterSize="2">
+                    <!-- ACCOUNTS (Left Column) -->
+                    <MudItem md="6">
+                        <MudPaper Class="p-4" Style="border-radius:20px; height:400px; background:#F5F5F5;">
+                            <MudText Typo="Typo.h5" Class="mb-3" Style="color:#004B93;">Your Accounts</MudText>
+                            <MudTable Items="@accounts" Hover="true" Dense="true" Style="background:white; border-radius:12px;">
+                                <HeaderContent>
+                                    <MudTh>Type</MudTh>
+                                    <MudTh>Balance</MudTh>
+                                    <MudTh>IBAN</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd>@context.AccountType</MudTd>
+                                    <MudTd>@context.Balance.ToString("C")</MudTd>
+                                    <MudTd>@context.Iban</MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        </MudPaper>
+                    </MudItem>
+
+                    <!-- CARDS (Right Column) -->
+                    <MudItem md="6">
+                        <MudPaper Class="p-4" Style="border-radius:20px; height:400px; background:#F5F5F5;">
+                            <MudText Typo="Typo.h5" Class="mb-3" Style="color:#004B93;">Your Cards</MudText>
+                            <MudGrid GutterSize="2">
+                                @foreach (var card in cards)
+                                {
+                                    <MudItem md="6">
+                                        <MudCard Style="border-radius:15px; background:white;">
+                                            <MudCardContent>
+                                                <MudText Typo="Typo.subtitle1">@card.CardType</MudText>
+                                                <MudText Typo="Typo.h6">**** **** **** @card.Last4Digits</MudText>
+                                                <MudText Typo="Typo.caption" Style="color:gray;">Expires: @card.Expiry</MudText>
+                                            </MudCardContent>
+                                        </MudCard>
+                                    </MudItem>
+                                }
+                            </MudGrid>
+                        </MudPaper>
+                    </MudItem>
+
+            </MudGrid>
+        </MudContainer>
+    </MudMainContent>
+
+</MudLayout>
+
+@code {
+    private UserDto? user;
+    private List<AccountDto> accounts = new();
+    private List<CardDto> cards = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("localStorage.getItem", "authToken");
+            if (string.IsNullOrEmpty(token))
+            {
+                //Nav.NavigateTo("/login");
+                return;
+            }
+
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            user = await Http.GetFromJsonAsync<UserDto>("api/users/me");
+            accounts = await Http.GetFromJsonAsync<List<AccountDto>>("api/accounts");
+            cards = await Http.GetFromJsonAsync<List<CardDto>>("api/cards");
+        }
+        catch
+        {
+           // Nav.NavigateTo("/login");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void Logout()
+    {
+        JS.InvokeVoidAsync("localStorage.removeItem", "authToken");
+        Nav.NavigateTo("/login");
+    }
+
+    public class UserDto { public string FullName { get; set; } public string Email { get; set; } }
+    public class AccountDto { public string AccountType { get; set; } public decimal Balance { get; set; } public string Iban { get; set; } }
+    public class CardDto { public string CardType { get; set; } public string Last4Digits { get; set; } public string Expiry { get; set; } }
+}

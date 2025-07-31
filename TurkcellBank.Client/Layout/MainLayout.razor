@@ -1,23 +1,36 @@
 ﻿@inherits LayoutComponentBase
+@using MudBlazor
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<MudLayout>
+    <!-- Top AppBar -->
+    <MudAppBar Elevation="4" Color="Color.Primary">
+        <MudText Typo="Typo.h6" Class="ml-2">TurkcellBank</MudText>
+        <MudSpacer />
+        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="Logout">
+            Logout
+        </MudButton>
+    </MudAppBar>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+    <!-- Sidebar Drawer -->
+    <MudDrawer Elevation="1" Variant="DrawerVariant.Mini" Anchor="Anchor.Start" Color="Color.Primary">
+        <MudNavMenu>
+            <MudNavLink Href="/dashboard" Icon="@Icons.Material.Filled.Dashboard" Match="NavLinkMatch.All" Style="color:white;">Dashboard</MudNavLink>
+            <MudNavLink Href="/accounts" Icon="@Icons.Material.Filled.AccountBalance" Style="color:white;">Accounts</MudNavLink>
+            <MudNavLink Href="/transfers" Icon="@Icons.Material.Filled.Send" Style="color:white;">Transfers</MudNavLink>
+            <MudNavLink Href="/loans" Icon="@Icons.Material.Filled.RequestQuote" Style="color:white;">Loans</MudNavLink>
+            <MudNavLink Href="/admin" Icon="@Icons.Material.Filled.AdminPanelSettings" Style="color:white;">Admin</MudNavLink>
+        </MudNavMenu>
+    </MudDrawer>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+    <!-- Main Content -->
+    <MudMainContent Class="p-4">
+        @Body
+    </MudMainContent>
+</MudLayout>
 
-<div id="blazor-error-ui">
-    An unhandled error has occurred.
-    <a href="" class="reload">Reload</a>
-    <a class="dismiss">🗙</a>
-</div>
+@code {
+    private void Logout()
+    {
+        // TODO: Clear token and redirect to login
+    }
+}

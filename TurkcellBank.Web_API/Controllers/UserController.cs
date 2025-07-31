@@ -14,13 +14,18 @@ namespace TurkcellBank.Web_API.Controllers
     [Route("api/[controller]")]
     public class UserController : ControllerBase
     {
+        //I inject Database Context (Entity Framework)
         private readonly AppDbContext _context;
+        //I inject JWT Handling Service
         private readonly IJwtService _jwtService;
+        //I inject Password Hashing Service
+        private readonly IPasswordService _passwordService;
 
-        public UserController(AppDbContext context, IJwtService jwtService)
+        public UserController(AppDbContext context, IJwtService jwtService, IPasswordService passwordService)
         {
             _context = context;
             _jwtService = jwtService;
+            _passwordService = passwordService;
         }
 
         [HttpPost("register")]
@@ -29,7 +34,7 @@ namespace TurkcellBank.Web_API.Controllers
             // 1. Null/empty check
             if (string.IsNullOrWhiteSpace(dto.Username) ||
                 string.IsNullOrWhiteSpace(dto.Email) ||
-                string.IsNullOrWhiteSpace(dto.PasswordHash))
+                string.IsNullOrWhiteSpace(dto.Password))
             {
                 return BadRequest("Username, Email, and Password are required.");
             }
@@ -40,7 +45,8 @@ namespace TurkcellBank.Web_API.Controllers
                 return Conflict("A user with this email already exists.");
             }
 
-            // 3. Hash the password later.
+            // 3. Hash the password
+            var hashedPassword = _passwordService.HashPassword(dto.Password);
 
             // 4. Create user entity
             var user = new User()
@@ -48,7 +54,8 @@ namespace TurkcellBank.Web_API.Controllers
                 Username = dto.Username,
                 FullName = dto.FullName,
                 Email = dto.Email,
-                PasswordHash = dto.PasswordHash
+                PasswordHash = hashedPassword,
+                CreatedAt = DateTime.UtcNow
             };
 
             // 5. Save to database
@@ -68,36 +75,46 @@ namespace TurkcellBank.Web_API.Controllers
             if (user == null)
                 return Unauthorized("Invalid email/username or password.");
 
-            bool isPasswordValid = dto.PasswordHash == user.PasswordHash;
-            if (!isPasswordValid)
-                return Unauthorized("Invalid email or password.");
+            if (!_passwordService.VerifyPassword(dto.Password, user.PasswordHash))
+                return Unauthorized("Invalid Credentials.");
 
             // 1. Create JWT token here (use a JwtService or similar)
             var token = _jwtService.GenerateToken(user);
-
             return Ok(new { token });
         }
         [Authorize]
-        [HttpGet("Get User Data")]
+        [HttpGet("me")]
         public async Task<IActionResult> GetProfile()
         {
             var userIDClaim = User.FindFirst("user_id")?.Value;
             if (string.IsNullOrEmpty(userIDClaim))
                 return Unauthorized("Token does not contain user ID");
-            var user = await _context.Users.FindAsync(int.Parse(userIDClaim));
+            if (!int.TryParse(userIDClaim, out int userID))
+                return Unauthorized("Invalid user ID in token.");
+
+            var user = await _context.Users
+                .Include(u => u.Accounts)
+                .FirstOrDefaultAsync(u => u.ID == userID);
+
             if (user == null)
                 return NotFound("User not found.");
-            return Ok(new
+
+            var dto = new UserProfileDTO
             {
-                user.Username,
-                user.FullName,
-                user.Email,
-                user.PasswordHash,
-                user.ID,
-                user.CreatedAt,
-                user.IsActive
-            });
+                ID = user.ID.ToString(),
+                Username = user.Username,
+                FullName = user.FullName,
+                Email = user.Email,
+                CreatedAt = user.CreatedAt,
+                AccountIDs = user.Accounts.Select(a => a.ID.ToString()).ToList(),
+                AccountTypes = user.Accounts.Select(a => a.AccountType).ToList(),
+                IBANs = user.Accounts.Select(a => a.IBAN).ToList(),
+                Balances = user.Accounts.Select(a => a.Balance).ToList(),
+                AccountCreatedDates = user.Accounts.Select(a => a.CreatedAt).ToList()
+            };
+            return Ok(dto);
         }
+
         [Authorize]
         [HttpPut("update")]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateDTO dto)
@@ -120,12 +137,11 @@ namespace TurkcellBank.Web_API.Controllers
             if (!string.IsNullOrWhiteSpace(dto.Username))
                 user.Username = dto.Username;
 
-            if (!string.IsNullOrWhiteSpace(dto.PasswordHash))
+            if (!string.IsNullOrWhiteSpace(dto.Password))
             {
                 // Reminder: this is raw password, hash it properly before production
-                user.PasswordHash = dto.PasswordHash;
+                user.PasswordHash = _passwordService.HashPassword(dto.Password);
             }
-
             _context.Users.Update(user);
             await _context.SaveChangesAsync();
             
@@ -155,6 +171,5 @@ namespace TurkcellBank.Web_API.Controllers
 
             return Ok(new { message = "User has been deleted" });
         }
-
     }
 }

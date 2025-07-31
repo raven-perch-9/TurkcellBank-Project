@@ -1,22 +1,28 @@
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Net.Http;
+using System.Threading.Tasks;
 using TurkcellBank.Client;
+using Blazored.LocalStorage;
+using MudBlazor.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<Routes>("#app");
+//MudBlazor templates will be used.
+builder.Services.AddMudServices();
+//HTTP Client goes below
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7104/") });
+//LocalStorage goes below
+builder.Services.AddBlazoredLocalStorage();
 
-// Load appsettings.json (already served from wwwroot)
+// This is used to load appsettings.json (already served from wwwroot).
+var http = new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) };
 var config = new ConfigurationBuilder()
-    .AddJsonStream(await new HttpClient().GetStreamAsync("appsettings.json"))
+    .AddJsonStream(await http.GetStreamAsync("appsettings.json"))
     .Build();
 
-// Get API base URL from config
+// We get API base URL from config via this part.
 var apiBaseUrl = config["ApiBaseUrl"] ?? "https://localhost:5001/";
-
-builder.Services.AddScoped(sp => new HttpClient
-{
-    BaseAddress = new Uri(apiBaseUrl)
-});
 
 await builder.Build().RunAsync();

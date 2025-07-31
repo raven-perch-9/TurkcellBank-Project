@@ -14,5 +14,6 @@ namespace TurkcellBank.Domain
         public string FullName { get; set; } = "Customer"; // default
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow; //default
         public bool IsActive { get; set; } = true; //default
+        public ICollection<Account> Accounts { get; set; } = null!;
     }
 }

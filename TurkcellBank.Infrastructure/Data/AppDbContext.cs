@@ -10,9 +10,6 @@ namespace TurkcellBank.Infrastructure.Data
 
         // Add your tables (DbSets) here
         public DbSet<User> Users { get; set; }
-
-        // Later you might add more like:
-        // public DbSet<Account> Accounts { get; set; }
-        // public DbSet<Transaction> Transactions { get; set; }
+        public DbSet<Account> Accounts { get; set; }
     }
 }
