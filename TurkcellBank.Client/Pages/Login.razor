@@ -6,6 +6,7 @@
 @using MudBlazor
 @inject HttpClient Http
 @inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
 
 <MudPaper Class="p-8" Elevation="8" Style="width:400px; background-color:white; border-radius:16px; border:20px solid white">
     <img src="Images/Male_Logo.jpg"
@@ -20,7 +21,7 @@
         <ValidationSummary />
 
         <MudTextField @bind-Value="loginModel.Identifier" 
-                      Label="Mail Adress or Username" 
+                      Label="Mail Address or Username" 
                       Variant="Variant.Filled" 
                       FullWidth="true" 
                       Margin="Margin.Dense" 
@@ -65,22 +66,23 @@
             if (response.IsSuccessStatusCode)
             {
                 var token = await response.Content.ReadAsStringAsync();
-                // TODO: Save token to LocalStorage
-                isSuccess = true;
+                var jwtProvider = (JwtAuthStateProvider)AuthStateProvider;
+                await jwtProvider.MarkUserAsAuthenticated(token);
                 message = "Login successful. Redirecting...";
-                await Task.Delay(1500);
+                isSuccess = true;
+                await Task.Delay(200);
                 Nav.NavigateTo("/home");
             }
             else
             {
-                isSuccess = false;
                 message = "Login failed. Check your email or password.";
+                isSuccess = false;
             }
         }
         catch (Exception ex)
         {
-            isSuccess = false;
             message = $"Error: {ex.Message}";
+            isSuccess = false;
         }
     }
 

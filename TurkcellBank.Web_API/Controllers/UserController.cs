@@ -101,12 +101,12 @@ namespace TurkcellBank.Web_API.Controllers
 
             var dto = new UserProfileDTO
             {
-                ID = user.ID.ToString(),
+                ID = user.ID,
                 Username = user.Username,
                 FullName = user.FullName,
                 Email = user.Email,
                 CreatedAt = user.CreatedAt,
-                AccountIDs = user.Accounts.Select(a => a.ID.ToString()).ToList(),
+                AccountIDs = user.Accounts.Select(a => a.ID).ToList(),
                 AccountTypes = user.Accounts.Select(a => a.AccountType).ToList(),
                 IBANs = user.Accounts.Select(a => a.IBAN).ToList(),
                 Balances = user.Accounts.Select(a => a.Balance).ToList(),

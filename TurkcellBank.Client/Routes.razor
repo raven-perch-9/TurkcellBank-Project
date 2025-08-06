@@ -1,13 +1,32 @@
-﻿@using Microsoft.AspNetCore.Components.Routing;
+﻿@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager Nav
 
-<Router AppAssembly="@typeof(Program).Assembly">
-    <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)" />
-        <FocusOnNavigate RouteData="routeData" Selector="h1" />
-    </Found>
-    <NotFound>
-        <LayoutView Layout="@typeof(Layout.MainLayout)">
-            <p>Sorry, here's nothing at this address.</p>
-        </LayoutView>
-    </NotFound>
-</Router>
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(Program).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData">
+                <NotAuthorized>
+                    @code {
+                        protected override void OnInitialized()
+                        {
+                            if (!Nav.Uri.EndsWith("/login"))
+                                Nav.NavigateTo("/login", true);
+                        }
+                    }
+                </NotAuthorized>
+                <Authorizing>
+                    <LayoutView Layout="@typeof(EmptyLayout)">
+                        <!-- Blank or "Loading..." screen -->
+                    </LayoutView>
+                </Authorizing>
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <LayoutView Layout="@typeof(Layout.MainLayout)">
+                <p>Sorry, there's nothing at this address.</p>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>

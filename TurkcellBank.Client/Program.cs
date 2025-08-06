@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Net.Http;
@@ -6,6 +7,7 @@ using System.Threading.Tasks;
 using TurkcellBank.Client;
 using Blazored.LocalStorage;
 using MudBlazor.Services;
+using TurkcellBank.Client.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<Routes>("#app");
@@ -15,7 +17,9 @@ builder.Services.AddMudServices();
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7104/") });
 //LocalStorage goes below
 builder.Services.AddBlazoredLocalStorage();
-
+//Authorization
+builder.Services.AddAuthorizationCore();
+builder.Services.AddScoped<AuthenticationStateProvider, JwtAuthStateProvider>();
 // This is used to load appsettings.json (already served from wwwroot).
 var http = new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) };
 var config = new ConfigurationBuilder()

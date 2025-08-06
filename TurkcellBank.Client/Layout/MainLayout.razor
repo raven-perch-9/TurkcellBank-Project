@@ -2,35 +2,89 @@
 @using MudBlazor
 
 <MudLayout>
-    <!-- Top AppBar -->
-    <MudAppBar Elevation="4" Color="Color.Primary">
-        <MudText Typo="Typo.h6" Class="ml-2">TurkcellBank</MudText>
-        <MudSpacer />
-        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="Logout">
-            Logout
-        </MudButton>
-    </MudAppBar>
 
     <!-- Sidebar Drawer -->
-    <MudDrawer Elevation="1" Variant="DrawerVariant.Mini" Anchor="Anchor.Start" Color="Color.Primary">
+    <MudDrawer Elevation="1" Variant="DrawerVariant.Persistent" Anchor="Anchor.Start" Style="background-color:#E0E0E0; width:220px;">
         <MudNavMenu>
-            <MudNavLink Href="/dashboard" Icon="@Icons.Material.Filled.Dashboard" Match="NavLinkMatch.All" Style="color:white;">Dashboard</MudNavLink>
-            <MudNavLink Href="/accounts" Icon="@Icons.Material.Filled.AccountBalance" Style="color:white;">Accounts</MudNavLink>
-            <MudNavLink Href="/transfers" Icon="@Icons.Material.Filled.Send" Style="color:white;">Transfers</MudNavLink>
-            <MudNavLink Href="/loans" Icon="@Icons.Material.Filled.RequestQuote" Style="color:white;">Loans</MudNavLink>
-            <MudNavLink Href="/admin" Icon="@Icons.Material.Filled.AdminPanelSettings" Style="color:white;">Admin</MudNavLink>
+            <!-- Main navigation -->
+            <MudNavLink Href="/dashboard" Icon="@Icons.Material.Filled.Dashboard" Match="NavLinkMatch.All" Style="color:black;">
+                Dashboard
+            </MudNavLink>
+            <MudNavLink Href="/accounts" Icon="@Icons.Material.Filled.AccountBalance" Style="color:black;">
+                Accounts
+            </MudNavLink>
+
+            <!-- Section: İşlem Listesi -->
+            <MudDivider Class="my-2" />
+            <MudText Class="ml-4 mt-6 mb-6" Style="color:black; font-weight:bold;">İşlem Listesi</MudText>
+            <!-- Hesap İşlemleri -->
+            <MudText Class="ml-6 mt-2 mb-0" Style="color:black; cursor:pointer; display:block;" @onclick="ToggleHesap">
+                Hesap İşlemleri
+            </MudText>
+            <MudCollapse Expanded="@_hesapExpanded">
+                <MudText Class="ml-10 mt-2 mb-2" Style="color:black; cursor:pointer; display:block;">
+                    Hesap Açımı
+                </MudText>
+                <MudText Class="ml-10 mt-2 mb-0" Style="color:black; cursor:pointer; display:block;">
+                    Hesap Kapatma
+                </MudText>
+            </MudCollapse>
+            <!-- Para Transferi -->
+            <MudText Class="ml-6 mt-4 mb-0" Style="color:black; cursor:pointer; display:block;" @onclick="TogglePara">
+                Para Transferi
+            </MudText>
+            <MudCollapse Expanded="@_paraExpanded">
+                <MudText Class="ml-10 mt-2 mb-2" Style="color:black; cursor:pointer; display:block;">
+                    Havale İşlemleri
+                </MudText>
+                <MudText Class="ml-10 mt-2 mb-2" Style="color:black; cursor:pointer; display:block;">
+                    EFT İşlemleri
+                </MudText>
+                <MudText Class="ml-10 mt-2 mb-2" Style="color:black; cursor:pointer; display:block;">
+                    SWIFT İşlemleri
+                </MudText>
+            </MudCollapse>
+            <!-- Kredi Başvurusu -->
+            <MudText Class="ml-6 mt-4 mb-4" Style="color:black; cursor:pointer; display:block;" OnClick="@(() => { })">
+                Kredi Başvurusu
+            </MudText>
+            <!-- Bilgi Güncelleme -->
+            <MudText Class="ml-6 mt-4 mb-4" Style="color:black; cursor:pointer; display:block;" OnClick="@(() => { })">
+                Bilgi Güncelleme
+            </MudText>
+            <!-- Kullanıcı İşlemleri -->
+            <MudText Class="ml-6 mt-4 mb-4" Style="color:black; cursor:pointer; display:block;" OnClick="@(() => { })">
+                Kullanıcı İşlemleri
+            </MudText>
+            <MudDivider Class="my-2" />
         </MudNavMenu>
     </MudDrawer>
 
     <!-- Main Content -->
-    <MudMainContent Class="p-4">
+    <MudMainContent Class="p-4" Style="margin-left:220px;">
         @Body
     </MudMainContent>
 </MudLayout>
+}
 
 @code {
+    private bool _hesapExpanded;
+    private bool _paraExpanded;
+
+    private void ToggleHesap()
+    {
+        _hesapExpanded = !_hesapExpanded;
+        Console.WriteLine("CLICKED");
+    }
+    private void TogglePara()
+    {
+        _paraExpanded = !_paraExpanded;
+        Console.WriteLine("CLICKED");
+    }
     private void Logout()
     {
         // TODO: Clear token and redirect to login
     }
-}
+    }
+
+
