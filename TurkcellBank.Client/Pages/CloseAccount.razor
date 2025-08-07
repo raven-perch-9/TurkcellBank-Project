@@ -1,0 +1,108 @@
+﻿@page "/close-account"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@layout MainLayout
+@using MudBlazor
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<MudPaper Class="p-4" Style="border-radius:20px;">
+    <MudText Typo="Typo.h5" Class="mb-4">Hesap Kapama</MudText>
+
+    <MudTable Items="@accounts" Hover="true" Dense="true">
+        <HeaderContent>
+            <MudTh>Hesap Türü</MudTh>
+            <MudTh>Bakiye</MudTh>
+            <MudTh>IBAN</MudTh>
+            <MudTh>İşlem</MudTh>
+        </HeaderContent>
+        <RowTemplate Context="context">
+            <MudTd>@context.AccountType</MudTd>
+            <MudTd>@context.Balance.ToString("N2") ₺</MudTd>
+            <MudTd>@context.Iban</MudTd>
+            <MudTd>
+                <MudButton Color="Color.Error" Variant="Variant.Text" OnClick="@(() => CloseAccountAction(context.ID))">
+                    Kapat
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudPaper>
+
+@code {
+    private List<AccountModel> accounts = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAccounts();
+    }
+
+    private async Task LoadAccounts()
+    {
+        try
+        {
+            var user = await Http.GetFromJsonAsync<UserProfileModel>("api/user/me");
+            if (user != null && user.AccountIDs.Count > 0)
+            {
+                accounts = Enumerable.Range(0, user.AccountIDs.Count).Select(i => new AccountModel
+                {
+                    ID = user.AccountIDs[i],
+                    AccountType = user.AccountTypes[i],
+                    Balance = user.Balances[i],
+                    Iban = user.IBANs[i],
+                    IsActive = true
+                })
+                .Where(accounts => accounts.IsActive)
+                .ToList();
+            }
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add($"Hesaplar yüklenemedi: {ex.Message}", Severity.Error);
+        }
+
+    }
+
+    private async Task CloseAccountAction(int AccountID)
+    {
+        Snackbar.Add($"Kapat çağrıldı: ID = {AccountID}", Severity.Info);
+
+        var response = await Http.PostAsync($"api/user/close/{AccountID}", null);
+
+        if (response.IsSuccessStatusCode)
+        {
+            Snackbar.Add("Hesap başarıyla kapatıldı.", Severity.Success);
+            await LoadAccounts();
+            StateHasChanged();
+        }
+        else
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            Snackbar.Add($"Hesap kapatma başarısız: {error}", Severity.Error);
+        }
+    }
+
+    public class AccountModel
+    {
+        public int ID { get; set; }
+        public string AccountType { get; set; }
+        public decimal Balance { get; set; }
+        public string Iban { get; set; }
+        public bool IsActive { get; set; }
+    }
+    public class UserProfileModel
+    {
+        public int ID { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+
+        public List<int> AccountIDs { get; set; } = new();
+        public List<string> AccountTypes { get; set; } = new();
+        public List<string> IBANs { get; set; } = new();
+        public List<decimal> Balances { get; set; } = new();
+        public List<DateTime> AccountCreatedDates { get; set; } = new();
+    }
+}

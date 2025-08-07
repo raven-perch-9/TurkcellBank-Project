@@ -171,5 +171,32 @@ namespace TurkcellBank.Web_API.Controllers
 
             return Ok(new { message = "User has been deleted" });
         }
+        [Authorize]
+        [HttpPost("close/{AccountID}")]
+        public async Task<IActionResult> CloseAccount(int AccountID)
+        {
+            var userIdClaim = User.FindFirst("user_id")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized("Invalid token: missing user_id");
+            var user = await _context.Users.FindAsync(int.Parse(userIdClaim));
+            var userID = int.Parse(userIdClaim);
+            if (user == null)
+                return NotFound("User not found");
+
+            var account = await _context.Accounts.FirstOrDefaultAsync(a => a.ID == AccountID && a.UserID == userID);
+
+            //Error Responses to the user
+            if (account == null)
+                return NotFound("Account not found.");
+            if (!account.IsActive)
+                return BadRequest("Account is already closed.");
+            if (account.Balance > 0)
+                return BadRequest("Account must be empty before closing.");
+
+            account.IsActive = false;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Account closed successfully" });
+        }
     }
 }

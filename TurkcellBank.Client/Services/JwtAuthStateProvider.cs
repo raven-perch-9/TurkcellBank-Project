@@ -13,12 +13,17 @@ namespace TurkcellBank.Client.Services
         {
             _js = js;
         }
+        public async Task ConsoleCheck()
+        {
+            await _js.InvokeVoidAsync("console.log", " ConsoleCheck method executed");
+        }
 
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
             try
             {
                 var token = await _js.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+                await _js.InvokeVoidAsync("console.log", $" Retrieved token: {token}");
                 if (string.IsNullOrWhiteSpace(token))
                     return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
 

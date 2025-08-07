@@ -33,10 +33,10 @@ else
         <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="p-6">
 
             <!-- WELCOME HEADER -->
-            <MudPaper Class="mx-auto mb-6" Style="background:white; padding:20px; border-radius:16px; max-width:600px;">
-                <MudText Typo="Typo.h2" Align="Align.Center" Style="color:black;">
-                    Welcome, @user?.FullName!
-                </MudText>
+            <MudPaper Class="mx-auto mb-1" Style="background:white; padding:20px; border-radius:16px; width:100%;">
+                    <MudText Typo="Typo.h2" Align="Align.Center" Style="color:black;">
+                        Welcome, @user?.FullName!
+                    </MudText>
             </MudPaper>
 
             <MudGrid GutterSize="2">
@@ -44,18 +44,22 @@ else
                 <MudItem md="6">
                     <MudPaper Class="p-4" Style="border-radius:20px; height:400px; background:#F5F5F5;">
                         <MudText Typo="Typo.h5" Class="mb-3" Style="color:#004B93;">Your Accounts</MudText>
-                        <MudTable Items="@accounts" Hover="true" Dense="true" Style="background:white; border-radius:12px;">
-                            <HeaderContent>
-                                <MudTh>Type</MudTh>
-                                <MudTh>Balance</MudTh>
-                                <MudTh>IBAN</MudTh>
-                            </HeaderContent>
-                            <RowTemplate>
-                                <MudTd>@context.AccountType</MudTd>
-                                <MudTd>@context.Balance.ToString("C")</MudTd>
-                                <MudTd>@context.Iban</MudTd>
-                            </RowTemplate>
-                        </MudTable>
+                            <MudTable Items="@accountRows" Hover="true" Dense="true" Style="background:white; border-radius:12px;">
+                                <HeaderContent>
+                                    <MudTh>Type</MudTh>
+                                    <MudTh>Balance</MudTh>
+                                    <MudTh>IBAN</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd>@context.AccountType</MudTd>
+                                    <MudTd>
+                                        <MudText Class="@((context.Balance >= 0) ? "text-success" : "text-error")">
+                                            @context.Balance.ToString("N2")
+                                        </MudText>
+                                    </MudTd>
+                                    <MudTd>@context.IBAN</MudTd>
+                                </RowTemplate>
+                            </MudTable>
                     </MudPaper>
                 </MudItem>
 
@@ -64,18 +68,7 @@ else
                     <MudPaper Class="p-4" Style="border-radius:20px; height:400px; background:#F5F5F5;">
                         <MudText Typo="Typo.h5" Class="mb-3" Style="color:#004B93;">Your Cards</MudText>
                         <MudGrid GutterSize="2">
-                            @foreach (var card in cards)
-                            {
-                                <MudItem md="6">
-                                    <MudCard Style="border-radius:15px; background:white;">
-                                        <MudCardContent>
-                                            <MudText Typo="Typo.subtitle1">@card.CardType</MudText>
-                                            <MudText Typo="Typo.h6">**** **** **** @card.Last4Digits</MudText>
-                                            <MudText Typo="Typo.caption" Style="color:gray;">Expires: @card.Expiry</MudText>
-                                        </MudCardContent>
-                                    </MudCard>
-                                </MudItem>
-                            }
+                            
                         </MudGrid>
                     </MudPaper>
                 </MudItem>
@@ -86,22 +79,30 @@ else
 }
 
 @code {
-    private UserDto? user;
-    private List<AccountDto> accounts = new();
-    private List<CardDto> cards = new();
+    private UserProfileModel? user;
+
     private bool isLoaded = false;
+    private List<AccountRow> accountRows = new();
 
     protected override async Task OnInitializedAsync()
     {
         var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
         if (!string.IsNullOrWhiteSpace(token))
             Http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);        
+
         try
         {
-            user = await Http.GetFromJsonAsync<UserDto>("api/users/me");
-            accounts = await Http.GetFromJsonAsync<List<AccountDto>>("api/accounts");
-            cards = await Http.GetFromJsonAsync<List<CardDto>>("api/cards");
+            user = await Http.GetFromJsonAsync<UserProfileModel>("api/user/me");
+            for (int i = 0; i < user.AccountTypes.Count; i++)
+            {
+                accountRows.Add(new AccountRow
+                {
+                    AccountType = user.AccountTypes[i],
+                    IBAN = user.IBANs[i],
+                    Balance = user.Balances[i]
+                });
+            }
         }
         finally
         {
@@ -117,7 +118,24 @@ else
         Nav.NavigateTo("/login", true);
     }
 
-    public class UserDto { public string FullName { get; set; } public string Email { get; set; } }
-    public class AccountDto { public string AccountType { get; set; } public decimal Balance { get; set; } public string Iban { get; set; } }
-    public class CardDto { public string CardType { get; set; } public string Last4Digits { get; set; } public string Expiry { get; set; } }
+    public class UserProfileModel
+    {
+        public int ID { get; set; }
+        public string Username { get; set; }
+        public string FullName { get; set; }
+        public string Email { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public List<int> AccountIDs { get; set; }
+        public List<string> AccountTypes { get; set; }
+        public List<string> IBANs { get; set; }
+        public List<decimal> Balances { get; set; }
+        public List<DateTime> AccountCreatedDates { get; set; }
+    }
+
+    public class AccountRow
+    {
+        public string AccountType { get; set; }
+        public string IBAN { get; set; }
+        public decimal Balance { get; set; }
+    }
 }

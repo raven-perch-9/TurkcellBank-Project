@@ -1,7 +1,11 @@
 ﻿@inherits LayoutComponentBase
 @using MudBlazor
+@inject NavigationManager Nav
+@inject ISnackbar Isnackbar
+@inject IDialogService DialogService
 
-<MudLayout>
+<MudSnackbarProvider />
+    <MudLayout>
 
     <!-- Sidebar Drawer -->
     <MudDrawer Elevation="1" Variant="DrawerVariant.Persistent" Anchor="Anchor.Start" Style="background-color:#E0E0E0; width:220px;">
@@ -25,7 +29,7 @@
                 <MudText Class="ml-10 mt-2 mb-2" Style="color:black; cursor:pointer; display:block;">
                     Hesap Açımı
                 </MudText>
-                <MudText Class="ml-10 mt-2 mb-0" Style="color:black; cursor:pointer; display:block;">
+                <MudText Class="ml-10 mt-2 mb-0" Style="color:black; cursor:pointer; display:block;" @onclick="@(() => Nav.NavigateTo("/close-account"))">
                     Hesap Kapatma
                 </MudText>
             </MudCollapse>
@@ -60,12 +64,14 @@
         </MudNavMenu>
     </MudDrawer>
 
-    <!-- Main Content -->
-    <MudMainContent Class="p-4" Style="margin-left:220px;">
+         <!-- Main Content -->
+        <MudMainContent Class="p-4" Style="margin-left:220px;">
         @Body
-    </MudMainContent>
-</MudLayout>
-}
+         </MudMainContent>
+
+    </MudLayout>
+
+
 
 @code {
     private bool _hesapExpanded;

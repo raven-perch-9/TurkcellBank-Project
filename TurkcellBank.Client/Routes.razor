@@ -1,19 +1,14 @@
 ﻿@using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.AspNetCore.Components.Authorization
 @inject NavigationManager Nav
+@using TurkcellBank.Client.Pages
 
 <CascadingAuthenticationState>
-    <Router AppAssembly="@typeof(Program).Assembly">
+    <Router AppAssembly="@typeof(Routes).Assembly">
         <Found Context="routeData">
             <AuthorizeRouteView RouteData="@routeData">
                 <NotAuthorized>
-                    @code {
-                        protected override void OnInitialized()
-                        {
-                            if (!Nav.Uri.EndsWith("/login"))
-                                Nav.NavigateTo("/login", true);
-                        }
-                    }
+                    <RedirectToLogin/>
                 </NotAuthorized>
                 <Authorizing>
                     <LayoutView Layout="@typeof(EmptyLayout)">
