@@ -1,0 +1,55 @@
+﻿@page "/update"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@using MudBlazor
+@layout MainLayout
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<div style="padding-top:10px;">
+<MudPaper Class="p-4" Style="border-radius:20px; max-width:500px; margin-left:30px;">
+    <MudText Typo="Typo.h5" Class="mb-4">Bilgi Güncelleme</MudText>
+
+    <MudTextField @bind-Value="model.FullName" Label="Ad Soyad" Variant="Variant.Outlined" Class="mb-3" />
+    <MudTextField @bind-Value="model.Email" Label="Email" Variant="Variant.Outlined" Class="mb-3" />
+    <MudTextField @bind-Value="model.Username" Label="Kullanıcı Adı" Variant="Variant.Outlined" Class="mb-3" />
+
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="UpdateProfile">Güncelle</MudButton>
+</MudPaper>
+</div>
+
+@code {
+    private UpdateProfileModel model = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await Http.GetFromJsonAsync<UpdateProfileModel>("api/user/me");
+        if (result != null)
+            model = result;
+    }
+
+    private async Task UpdateProfile()
+    {
+        var response = await Http.PutAsJsonAsync("api/user/update", model);
+        if (response.IsSuccessStatusCode)
+        {
+            Snackbar.Add("Bilgiler başarıyla güncellendi:", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add("Güncelleme başarısız.", Severity.Error);
+        }
+    }
+
+    public class UpdateProfileModel
+    {
+        public string FullName { get; set; }
+        public string Email { get; set; }
+        public string Username { get; set; }
+    }
+}

@@ -7,76 +7,52 @@
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 
-@if (!isLoaded)
-{
-    <!-- Fullscreen loading state -->
-    <div style="display:flex; justify-content:center; align-items:center; height:100vh; background:white;">
-        <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
-    </div>
-}
-else
-{
-<MudLayout>
-    <!-- TOP BAR WITH LOGO -->
-    <MudAppBar Elevation="0" Style="background-color:#154ba3; height:100px;">
-        <MudImage Src="images/Female_Logo.jpg" Alt="Turkcell Logo" Width="140" Class="ml-4" />
-        <MudSpacer />
-        <MudText Class="mr-4"
-                 Style="color:white; font-weight:bold; cursor:pointer; display:inline; margin-top:60px"
-                 @onclick="Logout">
-            Logout
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="p-6">
+
+    <!-- WELCOME HEADER -->
+    <MudPaper Class="mx-auto mb-1" Style="background:white; border-radius:16px; width:100%;">
+        <MudText Typo="Typo.h2" Align="Align.Center" Style="color:black; margin-bottom:20px">
+            Welcome, @user?.FullName!
         </MudText>
-    </MudAppBar>
+    </MudPaper>
 
-    <!-- MAIN CONTENT -->
-    <MudMainContent Style="background-color:white; padding-top:100px;">
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="p-6">
-
-            <!-- WELCOME HEADER -->
-            <MudPaper Class="mx-auto mb-1" Style="background:white; padding:20px; border-radius:16px; width:100%;">
-                    <MudText Typo="Typo.h2" Align="Align.Center" Style="color:black;">
-                        Welcome, @user?.FullName!
-                    </MudText>
+    <MudGrid GutterSize="2">
+        <!-- ACCOUNTS (Left Column) -->
+        <MudItem md="6">
+            <MudPaper Class="p-4" Style="border-radius:20px; height:400px; background:#F5F5F5;">
+                <MudText Typo="Typo.h5" Class="mb-3" Style="color:#004B93;">Your Accounts</MudText>
+                <MudTable Items="@accountRows" Hover="true" Dense="true" Style="background:white; border-radius:12px;">
+                    <HeaderContent>
+                        <MudTh>Type</MudTh>
+                        <MudTh>Balance</MudTh>
+                        <MudTh>IBAN</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.AccountType</MudTd>
+                        <MudTd>
+                            <MudText Class="@((context.Balance >= 0) ? "text-success" : "text-error")">
+                                @context.Balance.ToString("N2")
+                            </MudText>
+                        </MudTd>
+                        <MudTd>@context.IBAN</MudTd>
+                    </RowTemplate>
+                </MudTable>
             </MudPaper>
+        </MudItem>
 
-            <MudGrid GutterSize="2">
-                <!-- ACCOUNTS (Left Column) -->
-                <MudItem md="6">
-                    <MudPaper Class="p-4" Style="border-radius:20px; height:400px; background:#F5F5F5;">
-                        <MudText Typo="Typo.h5" Class="mb-3" Style="color:#004B93;">Your Accounts</MudText>
-                            <MudTable Items="@accountRows" Hover="true" Dense="true" Style="background:white; border-radius:12px;">
-                                <HeaderContent>
-                                    <MudTh>Type</MudTh>
-                                    <MudTh>Balance</MudTh>
-                                    <MudTh>IBAN</MudTh>
-                                </HeaderContent>
-                                <RowTemplate>
-                                    <MudTd>@context.AccountType</MudTd>
-                                    <MudTd>
-                                        <MudText Class="@((context.Balance >= 0) ? "text-success" : "text-error")">
-                                            @context.Balance.ToString("N2")
-                                        </MudText>
-                                    </MudTd>
-                                    <MudTd>@context.IBAN</MudTd>
-                                </RowTemplate>
-                            </MudTable>
-                    </MudPaper>
-                </MudItem>
+        <!-- CARDS (Right Column) -->
+        <MudItem md="6">
+            <MudPaper Class="p-4" Style="border-radius:20px; height:400px; background:#F5F5F5;">
+                <MudText Typo="Typo.h5" Class="mb-3" Style="color:#004B93;">Your Cards</MudText>
+                <MudGrid GutterSize="2">
+                    @* cards go here *@
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
 
-                <!-- CARDS (Right Column) -->
-                <MudItem md="6">
-                    <MudPaper Class="p-4" Style="border-radius:20px; height:400px; background:#F5F5F5;">
-                        <MudText Typo="Typo.h5" Class="mb-3" Style="color:#004B93;">Your Cards</MudText>
-                        <MudGrid GutterSize="2">
-                            
-                        </MudGrid>
-                    </MudPaper>
-                </MudItem>
-            </MudGrid>
-        </MudContainer>
-    </MudMainContent>
-</MudLayout>
-}
 
 @code {
     private UserProfileModel? user;
@@ -109,13 +85,6 @@ else
             isLoaded = true;
             StateHasChanged();
         }
-    }
-
-    private async void Logout()
-    {
-        await JS.InvokeVoidAsync("sessionStorage.removeItem", "authToken");
-        Http.DefaultRequestHeaders.Authorization = null;
-        Nav.NavigateTo("/login", true);
     }
 
     public class UserProfileModel

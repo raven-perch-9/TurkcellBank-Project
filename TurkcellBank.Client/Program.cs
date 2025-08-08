@@ -24,6 +24,7 @@ builder.Services.AddMudServices(config =>
     config.SnackbarConfiguration.ShowTransitionDuration = 250;
     config.SnackbarConfiguration.SnackbarVariant = Variant.Filled;
 });
+
 //HTTP Client goes below
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7104/") });
 //LocalStorage goes below

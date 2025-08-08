@@ -1,0 +1,85 @@
+﻿@page "/settings"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@using MudBlazor
+@using System.Net.Http.Json
+@layout MainLayout
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject NavigationManager Nav
+
+
+<MudPaper Class="p-4" Style="border-radius:20px; margin:20px; max-width:600px;">
+    <MudText Typo="Typo.h5" Class="mb-4">
+        <strong>Ayarlarım</strong>
+    </MudText>
+
+    <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="DeleteAccount">
+        TurkcellBank Kullanıcı Hesabımı Sil
+    </MudButton>
+</MudPaper>
+
+@code {
+    private UserProfileModel? user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (!string.IsNullOrWhiteSpace(token))
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        try
+        {
+            user = await Http.GetFromJsonAsync<UserProfileModel>("api/user/me");
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeleteAccount()
+    {
+        if (user == null)
+        {
+            Snackbar.Add("Kullanıcı bilgileri alınamadı.", Severity.Error);
+            return;
+        }
+
+        bool hasMoney = user.Balances.Any(b => b > 0);
+
+        if (hasMoney)
+        {
+            Snackbar.Add("Hesabınızı silebilmek için tüm bakiyelerinizi boşaltmanız gerekir.", Severity.Warning);
+            return;
+        }
+
+        var response = await Http.DeleteAsync("api/user/delete");
+
+        if (response.IsSuccessStatusCode)
+        {
+            Snackbar.Add("Hesabınız başarıyla kapatıldı.", Severity.Success);
+            Nav.NavigateTo("/login", true);
+        }
+        else
+        {
+            Snackbar.Add("Hesap kapatma işlemi başarısız oldu.", Severity.Error);
+        }
+    }
+
+    public class UserProfileModel
+    {
+        public int ID { get; set; }
+        public string Username { get; set; }
+        public string FullName { get; set; }
+        public string Email { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public List<int> AccountIDs { get; set; }
+        public List<string> AccountTypes { get; set; }
+        public List<string> IBANs { get; set; }
+        public List<decimal> Balances { get; set; }
+        public List<DateTime> AccountCreatedDates { get; set; }
+    }
+}

@@ -3,23 +3,27 @@
 @inject NavigationManager Nav
 @inject ISnackbar Isnackbar
 @inject IDialogService DialogService
+@inject IJSRuntime JS
+@inject HttpClient Http
+@using MudBlazor.Utilities
 
-<MudSnackbarProvider />
-    <MudLayout>
 
+<MudSnackbarProvider Style="z-index: 2000; background-color: white;" />
+<MudLayout>
+    <!-- TOP BAR WITH LOGO -->
+	<MudAppBar Elevation="0" Style="background-color:#154ba3; height:100px; z-index:1600;">
+        <MudImage Src="images/Female_Logo.jpg" Alt="Turkcell Logo" Width="140" Class="ml-4" />
+        <MudSpacer />
+        <MudText Class="mr-4"
+                 Style="color:white; font-weight:bold; cursor:pointer; display:inline; margin-top:60px"
+                 @onclick="Logout">
+            Logout
+        </MudText>
+    </MudAppBar>
     <!-- Sidebar Drawer -->
-    <MudDrawer Elevation="1" Variant="DrawerVariant.Persistent" Anchor="Anchor.Start" Style="background-color:#E0E0E0; width:220px;">
+    <MudDrawer Elevation="0" Style="background-color:#E0E0E0; width:220px; z-index:1500; margin-top:-20px;">
         <MudNavMenu>
-            <!-- Main navigation -->
-            <MudNavLink Href="/dashboard" Icon="@Icons.Material.Filled.Dashboard" Match="NavLinkMatch.All" Style="color:black;">
-                Dashboard
-            </MudNavLink>
-            <MudNavLink Href="/accounts" Icon="@Icons.Material.Filled.AccountBalance" Style="color:black;">
-                Accounts
-            </MudNavLink>
-
             <!-- Section: İşlem Listesi -->
-            <MudDivider Class="my-2" />
             <MudText Class="ml-4 mt-6 mb-6" Style="color:black; font-weight:bold;">İşlem Listesi</MudText>
             <!-- Hesap İşlemleri -->
             <MudText Class="ml-6 mt-2 mb-0" Style="color:black; cursor:pointer; display:block;" @onclick="ToggleHesap">
@@ -49,29 +53,32 @@
                 </MudText>
             </MudCollapse>
             <!-- Kredi Başvurusu -->
-            <MudText Class="ml-6 mt-4 mb-4" Style="color:black; cursor:pointer; display:block;" OnClick="@(() => { })">
+            <MudText Class="ml-6 mt-4 mb-4" Style="color:black; cursor:pointer; display:block;" @onclick="@(() => { })">
                 Kredi Başvurusu
             </MudText>
             <!-- Bilgi Güncelleme -->
-            <MudText Class="ml-6 mt-4 mb-4" Style="color:black; cursor:pointer; display:block;" OnClick="@(() => { })">
+            <MudText Class="ml-6 mt-4 mb-4" Style="color:black; cursor:pointer; display:block;" @onclick="@(() => Nav.NavigateTo("/update"))">
                 Bilgi Güncelleme
             </MudText>
             <!-- Kullanıcı İşlemleri -->
-            <MudText Class="ml-6 mt-4 mb-4" Style="color:black; cursor:pointer; display:block;" OnClick="@(() => { })">
+            <MudText Class="ml-6 mt-4 mb-4" Style="color:black; cursor:pointer; display:block;" @onclick="@(() => { })">
                 Kullanıcı İşlemleri
             </MudText>
             <MudDivider Class="my-2" />
+            <!-- Main navigation -->
+            <MudNavLink Href="/home" Icon="@Icons.Material.Filled.Dashboard" Match="NavLinkMatch.All" Style="color:black; margin-top:10px;">
+                Ana Sayfam
+            </MudNavLink>
+            <MudNavLink Href="/settings" Icon="@Icons.Material.Filled.Settings" Match="NavLinkMatch.All" Style="color:black;">
+                Ayarlarım
+            </MudNavLink>
         </MudNavMenu>
     </MudDrawer>
-
          <!-- Main Content -->
-        <MudMainContent Class="p-4" Style="margin-left:220px;">
+        <MudMainContent Class="p-4" Style="margin-left:240px; margin-top:120px;">
         @Body
          </MudMainContent>
-
-    </MudLayout>
-
-
+</MudLayout>
 
 @code {
     private bool _hesapExpanded;
@@ -87,9 +94,11 @@
         _paraExpanded = !_paraExpanded;
         Console.WriteLine("CLICKED");
     }
-    private void Logout()
+    private async Task Logout()
     {
-        // TODO: Clear token and redirect to login
+        await JS.InvokeVoidAsync("sessionStorage.removeItem", "authToken");
+        Http.DefaultRequestHeaders.Authorization = null;
+        Nav.NavigateTo("/login", true);
     }
     }
 

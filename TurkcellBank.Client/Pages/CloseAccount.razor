@@ -8,22 +8,23 @@
 @inject IDialogService DialogService
 
 <MudPaper Class="p-4" Style="border-radius:20px;">
-    <MudText Typo="Typo.h5" Class="mb-4">Hesap Kapama</MudText>
+    <MudText Typo="Typo.h4" Class="mb-4 ml-4">Hesap Kapama</MudText>
 
     <MudTable Items="@accounts" Hover="true" Dense="true">
         <HeaderContent>
-            <MudTh>Hesap Türü</MudTh>
-            <MudTh>Bakiye</MudTh>
-            <MudTh>IBAN</MudTh>
-            <MudTh>İşlem</MudTh>
+            <MudTh Style="font-weight: bold;">Hesap Türü</MudTh>
+            <MudTh Style="font-weight: bold;">Bakiye</MudTh>
+            <MudTh Style="font-weight: bold;">IBAN</MudTh>
+            <MudTh Style="font-weight: bold; padding-left: 30px;"> İşlem</MudTh>
         </HeaderContent>
         <RowTemplate Context="context">
             <MudTd>@context.AccountType</MudTd>
             <MudTd>@context.Balance.ToString("N2") ₺</MudTd>
             <MudTd>@context.Iban</MudTd>
             <MudTd>
-                <MudButton Color="Color.Error" Variant="Variant.Text" OnClick="@(() => CloseAccountAction(context.ID))">
-                    Kapat
+                <MudButton Color="Color.Error" Variant="Variant.Text" 
+                           OnClick="@(() => CloseAccountAction(context.ID))">
+                           Kapat
                 </MudButton>
             </MudTd>
         </RowTemplate>
