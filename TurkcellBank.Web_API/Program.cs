@@ -52,6 +52,8 @@ builder.Services.AddSwaggerGen(c =>
 });
 //PasswordHashing Service
 builder.Services.AddScoped<IPasswordService, PasswordService>();
+// Transaction Service
+builder.Services.AddScoped<ITransactionService, TransactionService>();
 // Validation of the Token by ASP.NET
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

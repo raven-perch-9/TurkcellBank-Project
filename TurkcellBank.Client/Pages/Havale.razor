@@ -1,0 +1,48 @@
+﻿@page "/havale"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@using MudBlazor
+@layout MainLayout
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+
+<div style="padding-top:10px;">
+<MudPaper Class="p-4" Style="border-radius:20px; max-width:500px; margin-left:30px;">
+    <MudText Typo="Typo.h3" Class="mb-4">Havale İşlemi</MudText>
+
+    <MudText Typo="Typo.h6" Class="mb-4">Para Gönderen Hesap IBAN Adresi</MudText>
+    <MudTextField @bind-Value="model.FromAccountIBAN" Label="IBAN giriniz" Variant="Variant.Outlined" Class="mb-3" />
+    <MudText Typo="Typo.h6" Class="mb-4">Paranın Gönderileceği Hesabın IBAN Adresi</MudText>
+    <MudTextField @bind-Value="model.ToAccountIBAN" Label="IBAN giriniz" Variant="Variant.Outlined" Class="mb-3" />
+    <MudText Typo="Typo.h6" Class="mb-4">Açıklama Giriniz (İsteğe Bağlı) </MudText>
+    <MudTextField @bind-Value="model.Description" Label="Açıklama" Variant="Variant.Outlined" Class="mb-3" />
+
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="TransferRequest">Havale Yap</MudButton>
+</MudPaper>
+</div>
+
+@code
+{
+	private TransferRequestModel model = new();
+
+    private async Task TransferRequest()
+    {
+        var response = await Http.PutAsJsonAsync("api/user/transfer", model);
+        if (response.IsSuccessStatusCode)
+        {
+            Snackbar.Add("Transfer Başarılı", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add("Transfer başarısız.", Severity.Error);
+        }
+    }
+    public class TransferRequestModel
+    {
+        public string FromAccountIBAN { get; set; }
+        public string ToAccountIBAN { get; set; }
+		public decimal Amount { get; set; }
+        public string? Description { get; set; }
+    }
+}

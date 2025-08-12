@@ -1,7 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using TurkcellBank.Infrastructure.Data; 
-using TurkcellBank.Infrastructure.Services; 
+using TurkcellBank.Infrastructure.Data;
+using TurkcellBank.Infrastructure.Services;
+using TurkcellBank.Domain; // Assuming User entity is here
+using System;
+using System.Linq;
 
 class Program
 {
@@ -19,18 +22,42 @@ class Program
         using var context = new AppDbContext(options);
         var passwordService = new PasswordService();
 
-        var users = context.Users.ToList();
-        foreach (var user in users)
+        // Seed 100 normal users
+        for (int i = 1; i <= 100; i++)
         {
-            // Check if already hashed (BCrypt hashes start with $2)
-            if (!user.PasswordHash.StartsWith("$2"))
+            string username = $"user{i}";
+            string password = $"pass{i}";
+            if (!context.Users.Any(u => u.Username == username))
             {
-                user.PasswordHash = passwordService.HashPassword(user.PasswordHash);
-                Console.WriteLine($"Rehashed password for User ID: {user.ID}");
+                context.Users.Add(new User
+                {
+                    Username = username,
+                    PasswordHash = passwordService.HashPassword(password),
+                    Email = $"{username}@TurkcellBank.com",
+                    FullName = $"User Name{i}",
+                    CreatedAt = DateTime.UtcNow,
+                    IsActive = true
+                });
+                Console.WriteLine($"Added: {username} / {password}");
             }
         }
+
+        // Seed admin user
+        if (!context.Users.Any(u => u.Username == "admin"))
+        {
+            context.Users.Add(new User
+            {
+                Username = "admin",
+                PasswordHash = passwordService.HashPassword("adminpass"),
+                Email = "admin@TurkcellBank.com",
+                FullName = "Administrator",
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            });
+            Console.WriteLine("Added: admin / adminpass");
+        }
+
         context.SaveChanges();
-        Console.WriteLine("All passwords have been rehashed with BCrypt.");
+        Console.WriteLine("All test users have been inserted.");
     }
 }
-

@@ -22,13 +22,17 @@ namespace TurkcellBank.Web_API.Controllers
         private readonly IPasswordService _passwordService;
         //Injecting IBAN Generation Service
         private readonly IGenerateIBAN _ibanGenerator;
-
-        public UserController(AppDbContext context, IJwtService jwtService, IPasswordService passwordService, IGenerateIBAN ibanGenerator)
+        //Injecting Transaction Service
+        private readonly ITransactionService _transactionService;
+        public UserController(AppDbContext context, IJwtService jwtService, IPasswordService passwordService,
+                                                    IGenerateIBAN ibanGenerator, ITransactionService transactionService)
         {
             _context = context;
             _jwtService = jwtService;
             _passwordService = passwordService;
             _ibanGenerator = ibanGenerator;
+            _transactionService = transactionService;
+            _transactionService = transactionService;
         }
 
         [HttpPost("register")]
@@ -260,6 +264,28 @@ namespace TurkcellBank.Web_API.Controllers
             };
 
             return Ok(new { success = true, data = result });
+        }
+
+        // Transfer money between accounts
+        [Authorize]
+        [HttpPost("transfer")]
+        public async Task<IActionResult> Transfer([FromBody] TransferRequestDTO request, CancellationToken ct)
+        {
+            if (request == null)
+                return BadRequest("Transfer request cannot be null.");
+            var userIdClaim = User.FindFirst("user_id")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized("Invalid token: missing user_id");
+            int userID = int.Parse(userIdClaim);
+            try
+            {
+                var result = await _transactionService.TransferAsync(userID, request);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
         }
     }
 }

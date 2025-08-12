@@ -1,7 +1,7 @@
 ﻿@inherits LayoutComponentBase
 @using MudBlazor
 @inject NavigationManager Nav
-@inject ISnackbar Isnackbar
+@inject ISnackbar Snackbar
 @inject IDialogService DialogService
 @inject IJSRuntime JS
 @inject HttpClient Http
@@ -14,7 +14,7 @@
 <MudLayout>
     <!-- TOP BAR WITH LOGO -->
 	<MudAppBar Elevation="0" Style="background-color:#154ba3; height:100px; z-index:600;">
-        <MudImage Src="images/Female_Logo.jpg" Alt="Turkcell Logo" Width="140" Class="ml-4" />
+        <MudImage Src="images/Female_Logo.jpg" Alt="Turkcell Logo" Width="140" Class="mt-8" />
         <MudSpacer />
         <MudText Class="mr-4"
                  Style="color:white; font-weight:bold; cursor:pointer; display:inline; margin-top:60px"
@@ -29,7 +29,7 @@
                Elevation="1"
                ClipMode="DrawerClipMode.Always"
                Class="pa-2"
-               Style="background-color:#E0E0E0; width:220px; z-index:500;">
+               Style="margin-top:30px; background-color:#E0E0E0; width:200px; z-index:500;">
         <MudNavMenu>
             <!-- Section: İşlem Listesi -->
             <MudText Class="ml-4 mt-6 mb-6" Style="color:black; font-weight:bold;">İşlem Listesi</MudText>
@@ -50,14 +50,11 @@
                 Para Transferi
             </MudText>
             <MudCollapse Expanded="@_paraExpanded">
-                <MudText Class="ml-10 mt-2 mb-2" Style="color:black; cursor:pointer; display:block;">
+                <MudText Class="ml-10 mt-2 mb-2" Style="color:black; cursor:pointer; display:block;" @onclick="@(() => Nav.NavigateTo("/havale"))">
                     Havale İşlemleri
                 </MudText>
                 <MudText Class="ml-10 mt-2 mb-2" Style="color:black; cursor:pointer; display:block;">
                     EFT İşlemleri
-                </MudText>
-                <MudText Class="ml-10 mt-2 mb-2" Style="color:black; cursor:pointer; display:block;">
-                    SWIFT İşlemleri
                 </MudText>
             </MudCollapse>
             <!-- Kredi Başvurusu -->
@@ -83,7 +80,7 @@
         </MudNavMenu>
     </MudDrawer>
          <!-- Main Content -->
-        <MudMainContent Class="p-4" Style="margin-top:120px;">
+        <MudMainContent Class="p-4" Style="margin-top:60px;">
         @Body
          </MudMainContent>
 </MudLayout>
