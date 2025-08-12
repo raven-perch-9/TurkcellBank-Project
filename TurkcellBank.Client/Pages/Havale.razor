@@ -6,6 +6,8 @@
 @inject HttpClient Http
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject IJSRuntime JS
 
 <div style="padding-top:10px;">
 <MudPaper Class="p-4" Style="border-radius:20px; max-width:500px; margin-left:30px;">
@@ -15,6 +17,9 @@
     <MudTextField @bind-Value="model.FromAccountIBAN" Label="IBAN giriniz" Variant="Variant.Outlined" Class="mb-3" />
     <MudText Typo="Typo.h6" Class="mb-4">Paranın Gönderileceği Hesabın IBAN Adresi</MudText>
     <MudTextField @bind-Value="model.ToAccountIBAN" Label="IBAN giriniz" Variant="Variant.Outlined" Class="mb-3" />
+    <MudText Typo="Typo.h6" Class="mb-4">Gönderilecek Miktar</MudText>
+    <MudNumericField T="decimal" @bind-Value="model.Amount" Label="Tutar giriniz" Variant="Variant.Outlined" Min="0.01m" 
+                     Step="0.01m" Immediate="true" Class="mb-3" />
     <MudText Typo="Typo.h6" Class="mb-4">Açıklama Giriniz (İsteğe Bağlı) </MudText>
     <MudTextField @bind-Value="model.Description" Label="Açıklama" Variant="Variant.Outlined" Class="mb-3" />
 
@@ -24,11 +29,25 @@
 
 @code
 {
-	private TransferRequestModel model = new();
+    private TransferRequestModel model = new();
 
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (!string.IsNullOrWhiteSpace(token))
+        {
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        }
+        else
+        {
+            Snackbar.Add("Oturum bulunamadı. Lütfen tekrar giriş yapın.", Severity.Warning);
+        }
+    }
     private async Task TransferRequest()
     {
-        var response = await Http.PutAsJsonAsync("api/user/transfer", model);
+        var response = await Http.PostAsJsonAsync("api/user/transfer", model);
+
         if (response.IsSuccessStatusCode)
         {
             Snackbar.Add("Transfer Başarılı", Severity.Success);
