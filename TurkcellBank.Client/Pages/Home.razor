@@ -24,17 +24,15 @@
                 <MudText Typo="Typo.h5" Class="mb-3" Style="color:#004B93;">Your Accounts</MudText>
                 <MudTable Items="@accountRows" Hover="true" Dense="true" Style="background:white; border-radius:12px;">
                     <HeaderContent>
-                        <MudTh>Type</MudTh>
-                        <MudTh>Balance</MudTh>
+                        <MudTh>Hesap Türü</MudTh>
+                        <MudTh>Para Birimi</MudTh>
+                        <MudTh>Bakiye</MudTh>
                         <MudTh>IBAN</MudTh>
                     </HeaderContent>
                     <RowTemplate>
                         <MudTd>@context.AccountType</MudTd>
-                        <MudTd>
-                            <MudText Class="@((context.Balance >= 0) ? "text-success" : "text-error")">
-                                @context.Balance.ToString("N2")
-                            </MudText>
-                        </MudTd>
+                        <MudTd>@context.CurrencyCode</MudTd>
+                        <MudTd>@context.Balance</MudTd>
                         <MudTd>@context.IBAN</MudTd>
                     </RowTemplate>
                 </MudTable>
@@ -75,6 +73,7 @@
                 accountRows.Add(new AccountRow
                 {
                     AccountType = user.AccountTypes[i],
+					CurrencyCode = user.CurrencyCode[i],
                     IBAN = user.IBANs[i],
                     Balance = user.Balances[i]
                 });
@@ -99,11 +98,13 @@
         public List<string> IBANs { get; set; }
         public List<decimal> Balances { get; set; }
         public List<DateTime> AccountCreatedDates { get; set; }
+        public List<string> CurrencyCode { get; set; }
     }
 
     public class AccountRow
     {
         public string AccountType { get; set; }
+		public string CurrencyCode { get; set; }
         public string IBAN { get; set; }
         public decimal Balance { get; set; }
     }

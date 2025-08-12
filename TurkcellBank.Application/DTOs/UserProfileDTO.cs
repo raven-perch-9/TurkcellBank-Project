@@ -17,4 +17,5 @@ public class UserProfileDTO
     public List<string> IBANs { get; set; } = null!;
     public List<decimal> Balances  { get; set; } = null!;
     public List<DateTime> AccountCreatedDates { get; set; } = null!;
+    public List<string> CurrencyCode { get; set; } = null!;
 }

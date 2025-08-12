@@ -20,12 +20,15 @@ namespace TurkcellBank.Web_API.Controllers
         private readonly IJwtService _jwtService;
         //I inject Password Hashing Service
         private readonly IPasswordService _passwordService;
+        //Injecting IBAN Generation Service
+        private readonly IGenerateIBAN _ibanGenerator;
 
-        public UserController(AppDbContext context, IJwtService jwtService, IPasswordService passwordService)
+        public UserController(AppDbContext context, IJwtService jwtService, IPasswordService passwordService, IGenerateIBAN ibanGenerator)
         {
             _context = context;
             _jwtService = jwtService;
             _passwordService = passwordService;
+            _ibanGenerator = ibanGenerator;
         }
 
         [HttpPost("register")]
@@ -108,6 +111,7 @@ namespace TurkcellBank.Web_API.Controllers
                 CreatedAt = user.CreatedAt,
                 AccountIDs = user.Accounts.Select(a => a.ID).ToList(),
                 AccountTypes = user.Accounts.Select(a => a.AccountType).ToList(),
+                CurrencyCode = user.Accounts.Select(a => a.CurrencyCode).ToList(),
                 IBANs = user.Accounts.Select(a => a.IBAN).ToList(),
                 Balances = user.Accounts.Select(a => a.Balance).ToList(),
                 AccountCreatedDates = user.Accounts.Select(a => a.CreatedAt).ToList()
@@ -197,6 +201,65 @@ namespace TurkcellBank.Web_API.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Account closed successfully" });
+        }
+
+        [Authorize]
+        [HttpPost("open")]
+        public async Task<IActionResult> OpenAccount([FromBody] OpenAccountDTO dto)
+        {
+            if (dto is null)
+                return BadRequest(new { success = false, message = "Geçersiz istek." });
+
+            //User Verification
+            var userIdClaim = User.FindFirst("user_id")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized("Invalid token: missing user_id");
+            var user = await _context.Users.FindAsync(int.Parse(userIdClaim));
+            var userID = int.Parse(userIdClaim);
+            if (user == null)
+                return NotFound("User not found");
+
+            //Account Data Validation
+            var accountType = (dto.AccountType ?? string.Empty).Trim();
+            var currency = (dto.CurrencyCode ?? string.Empty).Trim().ToUpperInvariant();
+            var initial = dto.InitialDeposit;
+
+            if (string.IsNullOrWhiteSpace(accountType))
+                return BadRequest(new { success = false, message = "Hesap türü zorunlu." });
+
+            if (string.IsNullOrWhiteSpace(currency))
+                return BadRequest(new { success = false, message = "Para birimi zorunlu." });
+
+            var account = new Account
+            {
+                UserID = userID,
+                AccountType = accountType,
+                CurrencyCode = currency,
+                Balance = initial,
+                IBAN = string.Empty,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Accounts.Add(account);
+            await _context.SaveChangesAsync();   //accountID is generated after SaveChangesAsync
+
+            account.IBAN = _ibanGenerator.Generate(userID, account.ID);
+            _context.Accounts.Update(account);
+            await _context.SaveChangesAsync();
+
+            var result = new
+            {
+                account.ID,
+                account.AccountType,
+                account.CurrencyCode,
+                account.IBAN,
+                account.Balance,
+                account.IsActive,
+                account.CreatedAt
+            };
+
+            return Ok(new { success = true, data = result });
         }
     }
 }

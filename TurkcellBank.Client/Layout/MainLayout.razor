@@ -7,11 +7,13 @@
 @inject HttpClient Http
 @using MudBlazor.Utilities
 
-
+<MudThemeProvider />
+<MudPopoverProvider />
 <MudSnackbarProvider Style="z-index: 2000; background-color: white;" />
+
 <MudLayout>
     <!-- TOP BAR WITH LOGO -->
-	<MudAppBar Elevation="0" Style="background-color:#154ba3; height:100px; z-index:1600;">
+	<MudAppBar Elevation="0" Style="background-color:#154ba3; height:100px; z-index:600;">
         <MudImage Src="images/Female_Logo.jpg" Alt="Turkcell Logo" Width="140" Class="ml-4" />
         <MudSpacer />
         <MudText Class="mr-4"
@@ -21,7 +23,13 @@
         </MudText>
     </MudAppBar>
     <!-- Sidebar Drawer -->
-    <MudDrawer Elevation="0" Style="background-color:#E0E0E0; width:220px; z-index:1500; margin-top:-20px;">
+    <MudDrawer Open="true"
+               Variant="DrawerVariant.Persistent"
+               Anchor="Anchor.Start"
+               Elevation="1"
+               ClipMode="DrawerClipMode.Always"
+               Class="pa-2"
+               Style="background-color:#E0E0E0; width:220px; z-index:500;">
         <MudNavMenu>
             <!-- Section: İşlem Listesi -->
             <MudText Class="ml-4 mt-6 mb-6" Style="color:black; font-weight:bold;">İşlem Listesi</MudText>
@@ -30,7 +38,7 @@
                 Hesap İşlemleri
             </MudText>
             <MudCollapse Expanded="@_hesapExpanded">
-                <MudText Class="ml-10 mt-2 mb-2" Style="color:black; cursor:pointer; display:block;">
+                <MudText Class="ml-10 mt-2 mb-2" Style="color:black; cursor:pointer; display:block;" @onclick="@(() => Nav.NavigateTo("/open-account"))">
                     Hesap Açımı
                 </MudText>
                 <MudText Class="ml-10 mt-2 mb-0" Style="color:black; cursor:pointer; display:block;" @onclick="@(() => Nav.NavigateTo("/close-account"))">
@@ -75,7 +83,7 @@
         </MudNavMenu>
     </MudDrawer>
          <!-- Main Content -->
-        <MudMainContent Class="p-4" Style="margin-left:240px; margin-top:120px;">
+        <MudMainContent Class="p-4" Style="margin-top:120px;">
         @Body
          </MudMainContent>
 </MudLayout>

@@ -15,6 +15,10 @@ builder.Services.AddScoped<IJwtService, JwtService>();
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+
+//Open Account IBAN Generation Service
+builder.Services.AddScoped<IGenerateIBAN, GenerateIBAN>();
+
 // Swagger Authorize Function
 builder.Services.AddSwaggerGen(c =>
 {
@@ -75,6 +79,7 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
+
 var app = builder.Build();
 
 app.UseDeveloperExceptionPage();

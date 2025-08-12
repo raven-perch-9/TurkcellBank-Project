@@ -13,13 +13,15 @@
     <MudTable Items="@accounts" Hover="true" Dense="true">
         <HeaderContent>
             <MudTh Style="font-weight: bold;">Hesap Türü</MudTh>
+            <MudTh Style="font-weight: bold;">Para Birimi</MudTh>
             <MudTh Style="font-weight: bold;">Bakiye</MudTh>
             <MudTh Style="font-weight: bold;">IBAN</MudTh>
             <MudTh Style="font-weight: bold; padding-left: 30px;"> İşlem</MudTh>
         </HeaderContent>
         <RowTemplate Context="context">
             <MudTd>@context.AccountType</MudTd>
-            <MudTd>@context.Balance.ToString("N2") ₺</MudTd>
+            <MudTd>@context.CurrencyCode</MudTd>
+            <MudTd>@context.Balance.ToString("N2")</MudTd>
             <MudTd>@context.Iban</MudTd>
             <MudTd>
                 <MudButton Color="Color.Error" Variant="Variant.Text" 
@@ -48,11 +50,12 @@
             {
                 accounts = Enumerable.Range(0, user.AccountIDs.Count).Select(i => new AccountModel
                 {
-                    ID = user.AccountIDs[i],
-                    AccountType = user.AccountTypes[i],
-                    Balance = user.Balances[i],
-                    Iban = user.IBANs[i],
-                    IsActive = true
+                     ID = user.AccountIDs[i],
+                     AccountType = user.AccountTypes[i],
+                     CurrencyCode = user.CurrencyCode[i],
+                     Balance = user.Balances[i],
+                     Iban = user.IBANs[i],
+                     IsActive = true
                 })
                 .Where(accounts => accounts.IsActive)
                 .ToList();
@@ -91,13 +94,14 @@
         public decimal Balance { get; set; }
         public string Iban { get; set; }
         public bool IsActive { get; set; }
+		public string CurrencyCode { get; set; }
     }
     public class UserProfileModel
     {
-        public int ID { get; set; }
-        public string Username { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string FullName { get; set; } = string.Empty;
+        public int UserID { get; set; }
+        public string Username { get; set; }
+        public string Email { get; set; }
+        public string FullName { get; set; } 
         public DateTime CreatedAt { get; set; }
 
         public List<int> AccountIDs { get; set; } = new();
@@ -105,5 +109,6 @@
         public List<string> IBANs { get; set; } = new();
         public List<decimal> Balances { get; set; } = new();
         public List<DateTime> AccountCreatedDates { get; set; } = new();
+		public List<string> CurrencyCode { get; set; } = new();
     }
 }

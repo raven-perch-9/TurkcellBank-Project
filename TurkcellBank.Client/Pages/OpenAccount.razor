@@ -1,5 +1,91 @@
-﻿<h3>OpenAccount</h3>
+﻿@page "/open-account"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@layout MainLayout
+@using MudBlazor
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+<MudGrid>
+    <MudItem xs="12" sm="7">
+		<MudPaper Class="pa-4">
+            <MudForm Model="@newAccount" @ref="form" @bind-IsValid="@success"
+            @bind-Errors="@errors">
+
+                <MudSelect @bind-Value="newAccount.AccountType" Label="Hesap Türü" Variant="Variant.Outlined">
+                    @foreach (var type in accountTypes)
+                    {
+                        <MudSelectItem Value="@type">@type</MudSelectItem>
+                    }
+                </MudSelect>
+
+                <MudSelect @bind-Value="newAccount.CurrencyCode" Label="Para Birimi" Variant="Variant.Outlined">
+                    @foreach (var currency in currencyTypes)
+                    {
+                        <MudSelectItem Value="@currency">@currency</MudSelectItem>
+                    }
+                </MudSelect>
+
+                <MudStack Row="true" Spacing="2" Class="mt-3">
+                    <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="@OpenAccountAction">
+                        Hesap Aç
+                    </MudButton>
+                </MudStack>
+            </MudForm>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
 
 @code {
+    MudForm form = new();
+    bool success;
+    string[] errors = { };
 
+    private NewAccountModel newAccount = new();
+
+    private readonly List<string> accountTypes = new() { "Vadesiz Mevduat", "Vadeli Mevduat" };
+	private readonly List<string> currencyTypes = new() { "TL", "USD", "EUR" };
+
+    private bool CanOpen => !string.IsNullOrWhiteSpace(newAccount.AccountType) &&
+                            !string.IsNullOrWhiteSpace(newAccount.CurrencyCode);
+    
+    private async Task OpenAccountAction()
+    {
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/user/open", newAccount);
+            if (!CanOpen)
+            {
+                Snackbar.Add("Lütfen hesap türü ve para birimi seçiniz.", Severity.Warning);
+                return;
+            }
+            if (response.IsSuccessStatusCode && CanOpen)
+            {
+                Snackbar.Add("Hesap başarıyla açıldı.", Severity.Success);
+
+                newAccount = new(); // Reset form
+		    	
+                StateHasChanged(); // Refresh UI
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Snackbar.Add($"Hesap açma başarısız: {error}", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Hesap açma sırasında hata: {ex.Message}", Severity.Error);
+        }
+    }
+
+    public class NewAccountModel
+    {
+        public string AccountType { get; set; } 
+		public string CurrencyCode { get; set; } 
+		public decimal InitialDeposit { get; set; } 
+    }
 }
