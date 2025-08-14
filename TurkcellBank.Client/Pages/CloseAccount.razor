@@ -6,6 +6,7 @@
 @inject HttpClient Http
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject IJSRuntime JS
 
 <MudPaper Class="p-4" Style="border-radius:20px;">
     <MudText Typo="Typo.h4" Class="mb-4 ml-4">Hesap Kapama</MudText>
@@ -38,6 +39,11 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (!string.IsNullOrWhiteSpace(token))
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
         await LoadAccounts();
     }
 
@@ -55,7 +61,7 @@
                      CurrencyCode = user.CurrencyCode[i],
                      Balance = user.Balances[i],
                      Iban = user.IBANs[i],
-                     IsActive = true
+					 IsActive = user.IsActive[i]
                 })
                 .Where(accounts => accounts.IsActive)
                 .ToList();
@@ -65,13 +71,10 @@
         {
             Snackbar.Add($"Hesaplar yüklenemedi: {ex.Message}", Severity.Error);
         }
-
     }
 
     private async Task CloseAccountAction(int AccountID)
     {
-        Snackbar.Add($"Kapat çağrıldı: ID = {AccountID}", Severity.Info);
-
         var response = await Http.PostAsync($"api/user/close/{AccountID}", null);
 
         if (response.IsSuccessStatusCode)
@@ -110,5 +113,6 @@
         public List<decimal> Balances { get; set; } = new();
         public List<DateTime> AccountCreatedDates { get; set; } = new();
 		public List<string> CurrencyCode { get; set; } = new();
+        public List<bool> IsActive { get; set; }
     }
 }

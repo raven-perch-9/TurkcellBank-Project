@@ -1,4 +1,4 @@
-﻿@page "/havale"
+﻿@page "/eft"
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @using MudBlazor
@@ -10,21 +10,21 @@
 @inject IJSRuntime JS
 
 <div style="padding-top:10px;">
-<MudPaper Class="p-4" Style="border-radius:20px; max-width:500px; margin-left:30px;">
-    <MudText Typo="Typo.h3" Class="mb-4">Havale İşlemi</MudText>
+    <MudPaper Class="p-4" Style="border-radius:20px; max-width:500px; margin-left:30px;">
+        <MudText Typo="Typo.h3" Class="mb-4">EFT İşlemi</MudText>
 
-    <MudText Typo="Typo.h6" Class="mb-4">Para Gönderen Hesap IBAN Adresi</MudText>
-    <MudTextField @bind-Value="model.FromAccountIBAN" Label="IBAN giriniz" Variant="Variant.Outlined" Class="mb-3" />
-    <MudText Typo="Typo.h6" Class="mb-4">Paranın Gönderileceği Hesabın IBAN Adresi</MudText>
-    <MudTextField @bind-Value="model.ToAccountIBAN" Label="IBAN giriniz" Variant="Variant.Outlined" Class="mb-3" />
-    <MudText Typo="Typo.h6" Class="mb-4">Gönderilecek Miktar</MudText>
-    <MudNumericField T="decimal" @bind-Value="model.Amount" Label="Tutar giriniz" Variant="Variant.Outlined" Min="0.01m" 
-                     Step="0.01m" Immediate="true" Class="mb-3" />
-    <MudText Typo="Typo.h6" Class="mb-4">Açıklama Giriniz (İsteğe Bağlı) </MudText>
-    <MudTextField @bind-Value="model.Description" Label="Açıklama" Variant="Variant.Outlined" Class="mb-3" />
+        <MudText Typo="Typo.h6" Class="mb-4">Para Gönderen Hesap IBAN Adresi</MudText>
+        <MudTextField @bind-Value="model.FromAccountIBAN" Label="IBAN giriniz" Variant="Variant.Outlined" Class="mb-3" />
+        <MudText Typo="Typo.h6" Class="mb-4">Paranın Gönderileceği Hesabın IBAN Adresi</MudText>
+        <MudTextField @bind-Value="model.ToAccountIBAN" Label="IBAN giriniz" Variant="Variant.Outlined" Class="mb-3" />
+        <MudText Typo="Typo.h6" Class="mb-4">Gönderilecek Miktar</MudText>
+        <MudNumericField T="decimal" @bind-Value="model.Amount" Label="Tutar giriniz" Variant="Variant.Outlined" Min="0.01m"
+                         Step="0.01m" Immediate="true" Class="mb-3" />
+        <MudText Typo="Typo.h6" Class="mb-4">Açıklama Giriniz (İsteğe Bağlı) </MudText>
+        <MudTextField @bind-Value="model.Description" Label="Açıklama" Variant="Variant.Outlined" Class="mb-3" />
 
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="TransferRequest">ONAY</MudButton>
-</MudPaper>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="TransferRequest">ONAY</MudButton>
+    </MudPaper>
 </div>
 
 @code
@@ -48,6 +48,11 @@
     }
     private async Task TransferRequest()
     {
+        if (!ValidateForEFT())
+        {
+            Snackbar.Add(validationMessage ?? "Banka içi transferler için havale sayfasının kullanın.", Severity.Error);
+            return;
+		}
         var response = await Http.PostAsJsonAsync("api/user/transfer", model);
 
         if (response.IsSuccessStatusCode)
@@ -59,7 +64,7 @@
             Snackbar.Add("Transfer başarısız.", Severity.Error);
         }
     }
-    private bool ValidateForHavale()
+    private bool ValidateForEFT()
     {
         validationMessage = null;
         var detected = DetectBankCode(model.ToAccountIBAN);
@@ -68,27 +73,27 @@
             validationMessage = "IBAN formatı geçersiz.";
             return false;
         }
-        if (!string.Equals(detected, OUR_BANK_CODE, StringComparison.Ordinal))
+        if (string.Equals(detected, OUR_BANK_CODE, StringComparison.Ordinal))
         {
-            validationMessage = "Bu IBAN başka bir bankaya aittir. Lütfen EFT sayfasını kullanın.";
+            validationMessage = "Bu IBAN bankamızda görünüyor. Lütfen Havale sayfasını kullanın.";
             return false;
         }
         return true;
     }
     private static string? DetectBankCode(string? IBAN)
     {
-        if (IBAN == null)
+        if (IBAN==null)
         {
             return null;
         }
-        var s = IBAN.Replace(" ", "").ToUpperInvariant();
-        return s.Substring(2, 5);
-    }
+		var s = IBAN.Replace(" ", "").ToUpperInvariant();
+		return s.Substring(2, 5);
+	}
     public class TransferRequestModel
     {
         public string FromAccountIBAN { get; set; }
         public string ToAccountIBAN { get; set; }
-		public decimal Amount { get; set; }
+        public decimal Amount { get; set; }
         public string? Description { get; set; }
     }
 }

@@ -76,18 +76,26 @@ namespace TurkcellBank.Web_API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDTO dto)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => 
-                u.Email == dto.Identifier || u.Username == dto.Identifier);
+            try
+            {
+                var user = await _context.Users.FirstOrDefaultAsync(u =>
+                    u.Email == dto.Identifier || u.Username == dto.Identifier);
 
-            if (user == null)
-                return Unauthorized("Invalid email/username or password.");
+                if (user == null)
+                    return Unauthorized("Invalid email/username or password.");
 
-            if (!_passwordService.VerifyPassword(dto.Password, user.PasswordHash))
-                return Unauthorized("Invalid Credentials.");
+                if (!_passwordService.VerifyPassword(dto.Password, user.PasswordHash))
+                    return Unauthorized("Invalid Credentials.");
 
-            // 1. Create JWT token here (use a JwtService or similar)
-            var token = _jwtService.GenerateToken(user);
-            return Ok(new { token });
+                // 1. Create JWT token here (use a JwtService or similar)
+                var token = _jwtService.GenerateToken(user);
+                return Ok(new { token });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return StatusCode(500, ex.Message);
+            }
         }
         [Authorize]
         [HttpGet("me")]
@@ -118,7 +126,8 @@ namespace TurkcellBank.Web_API.Controllers
                 CurrencyCode = user.Accounts.Select(a => a.CurrencyCode).ToList(),
                 IBANs = user.Accounts.Select(a => a.IBAN).ToList(),
                 Balances = user.Accounts.Select(a => a.Balance).ToList(),
-                AccountCreatedDates = user.Accounts.Select(a => a.CreatedAt).ToList()
+                AccountCreatedDates = user.Accounts.Select(a => a.CreatedAt).ToList(),
+                IsActive = user.Accounts.Select(a => a.IsActive).ToList()
             };
             return Ok(dto);
         }

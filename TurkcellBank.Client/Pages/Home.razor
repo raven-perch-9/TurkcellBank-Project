@@ -70,13 +70,16 @@
             user = await Http.GetFromJsonAsync<UserProfileModel>("api/user/me");
             for (int i = 0; i < user.AccountTypes.Count; i++)
             {
-                accountRows.Add(new AccountRow
+                if (user.IsActive[i])
                 {
-                    AccountType = user.AccountTypes[i],
-					CurrencyCode = user.CurrencyCode[i],
-                    IBAN = user.IBANs[i],
-                    Balance = user.Balances[i]
-                });
+                    accountRows.Add(new AccountRow
+                        {
+                            AccountType = user.AccountTypes[i],
+                            CurrencyCode = user.CurrencyCode[i],
+                            IBAN = user.IBANs[i],
+                            Balance = user.Balances[i]
+                        });
+                }
             }
         }
         finally
@@ -99,6 +102,7 @@
         public List<decimal> Balances { get; set; }
         public List<DateTime> AccountCreatedDates { get; set; }
         public List<string> CurrencyCode { get; set; }
+        public List<bool> IsActive { get; set; }
     }
 
     public class AccountRow

@@ -18,4 +18,5 @@ public class UserProfileDTO
     public List<decimal> Balances  { get; set; } = null!;
     public List<DateTime> AccountCreatedDates { get; set; } = null!;
     public List<string> CurrencyCode { get; set; } = null!;
+    public List<bool> IsActive { get; set; } = null!;
 }
