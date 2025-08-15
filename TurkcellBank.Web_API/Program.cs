@@ -72,15 +72,28 @@ builder.Services
             NameClaimType = "user_id"
         };
     });
-builder.Services.AddCors(options =>
+
+string clientOrigin;
+
+if (builder.Environment.IsDevelopment())
 {
-    options.AddPolicy("AllowBlazorClient", policy =>
+    clientOrigin = "https://localhost:7000";
+}
+else
+{
+    clientOrigin = "https://turkcellbank-client-afcecch9bqdrg2ap.swedencentral-01.azurewebsites.net/";
+}
+
+    builder.Services.AddCors(options =>
     {
-        policy.WithOrigins("https://localhost:7000")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        options.AddPolicy("ClientOnly", policy =>
+        {
+            policy.WithOrigins(clientOrigin)
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        });
     });
-});
 
 var app = builder.Build();
 
@@ -90,7 +103,7 @@ app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
-app.UseCors("AllowBlazorClient");
+app.UseCors("ClientOnly");
 
 app.UseAuthentication();
 

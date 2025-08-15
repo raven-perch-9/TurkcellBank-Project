@@ -1,18 +1,13 @@
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Microsoft.Extensions.DependencyInjection;
 using MudBlazor;
 using MudBlazor.Services;
-using System;
-using System.Net.Http;
-using System.Threading.Tasks;
 using TurkcellBank.Client;
 using TurkcellBank.Client.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<Routes>("#app");
-//MudBlazor templates will be used.
 builder.Services.AddMudServices(config =>
 {
     config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.TopRight;
@@ -25,20 +20,50 @@ builder.Services.AddMudServices(config =>
     config.SnackbarConfiguration.SnackbarVariant = Variant.Filled;
 });
 
-//HTTP Client goes below
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7104/") });
+var baseAddress = builder.HostEnvironment.BaseAddress;
+var isLocal = baseAddress.StartsWith("https://localhost", StringComparison.OrdinalIgnoreCase);
+var isProd = baseAddress.EndsWith("azurewebsites.net", StringComparison.OrdinalIgnoreCase);
+var effectiveEnv = isLocal ? "Development" : 
+                     isProd ? "Production" : 
+                     builder.HostEnvironment.Environment;
+
+var http = new HttpClient { BaseAddress = new Uri(baseAddress) };
+
+var config = new ConfigurationBuilder()
+    .AddJsonStream(await http.GetStreamAsync("appsettings.json"))
+    .Build();
+
+var envFile = $"appsettings.{effectiveEnv}.json";
+try
+{
+    using var envStream = await http.GetStreamAsync(envFile);
+    config = new ConfigurationBuilder().AddConfiguration(config).AddJsonStream(envStream).Build();
+}
+catch
+{
+    // Env File Later
+}
+
+string apiBaseUrl = config["ApiBaseUrl"] ?? baseAddress;   // <-- single line change (no txt file)
+if (!apiBaseUrl.EndsWith("/")) apiBaseUrl += "/";
+Console.WriteLine($"[DEBUG] BaseAddress: {baseAddress}");
+Console.WriteLine($"[DEBUG] EffectiveEnv: {effectiveEnv}");
+Console.WriteLine($"[DEBUG] ApiBaseUrl: {apiBaseUrl}");
+
+//HTTP Client
+builder.Services.AddScoped(sp => new HttpClient
+{
+    BaseAddress = new Uri(apiBaseUrl)
+});
+
 //LocalStorage goes below
 builder.Services.AddBlazoredLocalStorage();
 //Authorization
 builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<AuthenticationStateProvider, JwtAuthStateProvider>();
-// This is used to load appsettings.json (already served from wwwroot).
-var http = new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) };
-var config = new ConfigurationBuilder()
-    .AddJsonStream(await http.GetStreamAsync("appsettings.json"))
-    .Build();
 
-// We get API base URL from config via this part.
-var apiBaseUrl = config["ApiBaseUrl"] ?? "https://localhost:5001/";
+var host = builder.Build();
 
-await builder.Build().RunAsync();
+Console.WriteLine("Debug before run");
+
+await host.RunAsync();
