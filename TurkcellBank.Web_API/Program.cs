@@ -81,7 +81,7 @@ if (builder.Environment.IsDevelopment())
 }
 else
 {
-    clientOrigin = "https://turkcellbank-client-afcecch9bqdrg2ap.swedencentral-01.azurewebsites.net/";
+    clientOrigin = "https://turkcellbank-client-afcecch9bqdrg2ap.swedencentral-01.azurewebsites.net";
 }
 
     builder.Services.AddCors(options =>

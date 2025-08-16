@@ -44,11 +44,7 @@ catch
     // Env File Later
 }
 
-string apiBaseUrl = config["ApiBaseUrl"] ?? baseAddress;   // <-- single line change (no txt file)
-if (!apiBaseUrl.EndsWith("/")) apiBaseUrl += "/";
-Console.WriteLine($"[DEBUG] BaseAddress: {baseAddress}");
-Console.WriteLine($"[DEBUG] EffectiveEnv: {effectiveEnv}");
-Console.WriteLine($"[DEBUG] ApiBaseUrl: {apiBaseUrl}");
+string apiBaseUrl = config["ApiBaseUrl"] ?? baseAddress;
 
 //HTTP Client
 builder.Services.AddScoped(sp => new HttpClient
@@ -63,7 +59,5 @@ builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<AuthenticationStateProvider, JwtAuthStateProvider>();
 
 var host = builder.Build();
-
-Console.WriteLine("Debug before run");
 
 await host.RunAsync();
