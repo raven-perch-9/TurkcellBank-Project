@@ -4,14 +4,11 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using TurkcellBank.Application.User.Services.Interfaces;
 using TurkcellBank.Domain;
 
 namespace TurkcellBank.Infrastructure.Services
 {
-    public interface IJwtService
-    {
-        string GenerateToken(User user);
-    }
     public class JwtService : IJwtService
     {
         private readonly IConfiguration _config;
@@ -21,7 +18,7 @@ namespace TurkcellBank.Infrastructure.Services
             _config = config;
         }
 
-        public string GenerateToken(User user)
+        public string GenerateToken(TurkcellBank.Domain.User user)
         {
             var claims = new[]
             {

@@ -1,10 +1,8 @@
-﻿//Used for retrieveing user information on the database by an API.
-//No password is exchanged due to security measures.
-
-namespace TurkcellBank.Application.DTOs;
-
-public class UserProfileDTO
+﻿namespace TurkcellBank.Application.User.DTOs
 {
+    // User Data Below
+    public class UserProfileDTO
+    {   
     public int ID { get; set; }
     public string Username { get; set; } = null!;
     public string Email { get; set; } = null!;
@@ -19,4 +17,5 @@ public class UserProfileDTO
     public List<DateTime> AccountCreatedDates { get; set; } = null!;
     public List<string> CurrencyCode { get; set; } = null!;
     public List<bool> IsActive { get; set; } = null!;
+    }
 }

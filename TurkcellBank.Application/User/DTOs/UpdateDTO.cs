@@ -1,6 +1,4 @@
-﻿//Used for updating user information on the system.
-
-namespace TurkcellBank.Application.DTOs
+﻿namespace TurkcellBank.Application.User.DTOs
 {
     public class UpdateDTO
     {

@@ -1,24 +1,34 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using TurkcellBank.Infrastructure.Data;
-using TurkcellBank.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
+using TurkcellBank.Application.User.Services;
+using TurkcellBank.Application.User.Services.Interfaces;
+using TurkcellBank.Application.Common.Abstractions;
+using TurkcellBank.Infrastructure.Data;
+using TurkcellBank.Infrastructure.Services;
+using TurkcellBank.Infrastructure.Options;
+using TurkcellBank.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add SQL Context
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-//Open Account IBAN Generation Service
 builder.Services.AddScoped<IGenerateIBAN, GenerateIBAN>();
-
+builder.Services.AddScoped<IPasswordService, PasswordService>();
+builder.Services.AddScoped<ITransactionService, TransactionService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 // Swagger Authorize Function
 builder.Services.AddSwaggerGen(c =>
 {
@@ -50,10 +60,6 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
-//PasswordHashing Service
-builder.Services.AddScoped<IPasswordService, PasswordService>();
-// Transaction Service
-builder.Services.AddScoped<ITransactionService, TransactionService>();
 // Validation of the Token by ASP.NET
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -65,11 +71,15 @@ builder.Services
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
+
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
-            NameClaimType = "user_id"
+
+            ClockSkew = TimeSpan.Zero,
+            NameClaimType = JwtRegisteredClaimNames.Sub,
+            RoleClaimType = ClaimTypes.Role
         };
     });
 

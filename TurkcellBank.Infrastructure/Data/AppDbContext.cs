@@ -13,6 +13,8 @@ namespace TurkcellBank.Infrastructure.Data
         public DbSet<User> Users { get; set; }
         public DbSet<Account> Accounts { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
+        public DbSet<CreditApplication> CreditApplications { get; set; }
+        public DbSet<CreditInstallment> CreditInstallments { get; set; }
 
         // Adding Transaction Configuration Class to the Context
         protected override void OnModelCreating(ModelBuilder modelBuilder)

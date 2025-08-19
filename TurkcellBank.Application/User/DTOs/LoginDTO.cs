@@ -1,6 +1,4 @@
-﻿//User is logged into the system here.
-
-namespace TurkcellBank.Application.DTOs
+﻿namespace TurkcellBank.Application.User.DTOs
 {
     public class LoginDTO
     {

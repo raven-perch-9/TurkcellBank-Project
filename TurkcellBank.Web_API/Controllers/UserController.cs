@@ -2,8 +2,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client;
 using System.Security.Claims;
+using TurkcellBank.Application.Common.Abstractions;
 using TurkcellBank.Application.DTOs;
+using TurkcellBank.Application.User.DTOs;
+using TurkcellBank.Application.User.Services.Interfaces;
 using TurkcellBank.Domain;
 using TurkcellBank.Infrastructure.Data;
 using TurkcellBank.Infrastructure.Services;
@@ -14,63 +18,39 @@ namespace TurkcellBank.Web_API.Controllers
     [Route("api/[controller]")]
     public class UserController : ControllerBase
     {
-        //I inject Database Context (Entity Framework)
-        private readonly AppDbContext _context;
-        //I inject JWT Handling Service
-        private readonly IJwtService _jwtService;
-        //I inject Password Hashing Service
-        private readonly IPasswordService _passwordService;
+        //Depends on abstractions for context
+        private readonly IUserRepository _users;
+        //I inject Athentication Service
+        private readonly IAuthService _authService;
         //Injecting IBAN Generation Service
         private readonly IGenerateIBAN _ibanGenerator;
         //Injecting Transaction Service
         private readonly ITransactionService _transactionService;
-        public UserController(AppDbContext context, IJwtService jwtService, IPasswordService passwordService,
-                                                    IGenerateIBAN ibanGenerator, ITransactionService transactionService)
+        public UserController(IUserRepository userRepository, IAuthService authService, IGenerateIBAN ibanGenerator,
+                                                    ITransactionService transactionService)
         {
-            _context = context;
-            _jwtService = jwtService;
-            _passwordService = passwordService;
+            _users = userRepository;
+            _authService = authService;
             _ibanGenerator = ibanGenerator;
-            _transactionService = transactionService;
             _transactionService = transactionService;
         }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDTO dto)
         {
-            // 1. Null/empty check
             if (string.IsNullOrWhiteSpace(dto.Username) ||
                 string.IsNullOrWhiteSpace(dto.Email) ||
                 string.IsNullOrWhiteSpace(dto.Password))
             {
                 return BadRequest("Username, Email, and Password are required.");
             }
-            // 2. Check if email already exists
-            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
-            if (existingUser != null)
-            {
+            if (await _users.EmailExistsAsync(dto.Email))
                 return Conflict("A user with this email already exists.");
-            }
+            if (await _users.UsernameExistsAsync(dto.Username))
+                return Conflict("A user with this username already exists.");
 
-            // 3. Hash the password
-            var hashedPassword = _passwordService.HashPassword(dto.Password);
-
-            // 4. Create user entity
-            var user = new User()
-            {
-                Username = dto.Username,
-                FullName = dto.FullName,
-                Email = dto.Email,
-                PasswordHash = hashedPassword,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            // 5. Save to database
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            // 6. Return 201 Created
-            return CreatedAtAction(nameof(Register), new { id = user.ID }, "User registered successfully.");
+            var token = await _authService.RegisterAsync(dto);
+            return Ok(new { message = "User registered successfully.", token });
         }
 
         [HttpPost("login")]
@@ -78,41 +58,40 @@ namespace TurkcellBank.Web_API.Controllers
         {
             try
             {
-                var user = await _context.Users.FirstOrDefaultAsync(u =>
-                    u.Email == dto.Identifier || u.Username == dto.Identifier);
+                if (string.IsNullOrWhiteSpace(dto.Identifier) || string.IsNullOrWhiteSpace(dto.Password))
+                {
+                    return BadRequest(new { success = false, message = "Email/Username and Password are required." });
+                }
+                var token = await _authService.LoginAsync(dto);
+                if (token is null)
+                    return Unauthorized(new { success = false, message = "Invalid email/username or password." });
 
-                if (user == null)
-                    return Unauthorized("Invalid email/username or password.");
-
-                if (!_passwordService.VerifyPassword(dto.Password, user.PasswordHash))
-                    return Unauthorized("Invalid Credentials.");
-
-                // 1. Create JWT token here (use a JwtService or similar)
-                var token = _jwtService.GenerateToken(user);
-                return Ok(new { token });
+                return Ok(new { success = true, token });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
-                return StatusCode(500, ex.Message);
+                Console.WriteLine($"[Login Error] {ex}");
+                return StatusCode(500, new { success = false, message = "An internal error occurred. Please try again later." });
             }
         }
+
         [Authorize]
         [HttpGet("me")]
         public async Task<IActionResult> GetProfile()
         {
-            var userIDClaim = User.FindFirst("user_id")?.Value;
-            if (string.IsNullOrEmpty(userIDClaim))
-                return Unauthorized("Token does not contain user ID");
-            if (!int.TryParse(userIDClaim, out int userID))
-                return Unauthorized("Invalid user ID in token.");
+            var userIdClaim = User.FindFirst("user_id")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+                return Unauthorized("Invalid or missing user_id in token.");
 
-            var user = await _context.Users
-                .Include(u => u.Accounts)
-                .FirstOrDefaultAsync(u => u.ID == userID);
-
+            var user = await _users.GetByIdAsync(userId);
             if (user == null)
                 return NotFound("User not found.");
+
+            var accounts = user.Accounts ?? new List<Account>();
 
             var dto = new UserProfileDTO
             {
@@ -137,45 +116,36 @@ namespace TurkcellBank.Web_API.Controllers
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateDTO dto)
         {
             var userIdClaim = User.FindFirst("user_id")?.Value;
-            if (string.IsNullOrEmpty(userIdClaim))
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
                 return Unauthorized("Invalid token: missing user_id");
 
-            var user = await _context.Users.FindAsync(int.Parse(userIdClaim));
+            var user = await _users.GetByIdAsync(userId);
             if (user == null)
                 return NotFound("User not found");
 
-            // Update fields
             if (!string.IsNullOrWhiteSpace(dto.FullName))
                 user.FullName = dto.FullName;
-
             if (!string.IsNullOrWhiteSpace(dto.Email))
                 user.Email = dto.Email;
-
             if (!string.IsNullOrWhiteSpace(dto.Username))
                 user.Username = dto.Username;
-
             if (!string.IsNullOrWhiteSpace(dto.Password))
-            {
-                // Reminder: this is raw password, hash it properly before production
-                user.PasswordHash = _passwordService.HashPassword(dto.Password);
-            }
-            _context.Users.Update(user);
-            await _context.SaveChangesAsync();
-            
+                user.PasswordHash = _authService.HashPassword(dto.Password);
+
+            _users.Update(user);
+            await _users.SaveChangesAsync();
+
             return Ok(new { message = "Profile updated successfully." });
         }
+
         [Authorize]
         [HttpDelete("delete")]
         public async Task<IActionResult> SoftDeleteUser()
         {
             var userIdClaim = User.FindFirst("user_id")?.Value;
-            if (string.IsNullOrEmpty(userIdClaim))
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
                 return Unauthorized("Invalid token: missing user_id");
-
-            if (!int.TryParse(userIdClaim, out int userId))
-                return BadRequest("Invalid user ID format.");
-
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _users.GetByIdAsync(userId);
             if (user == null)
                 return NotFound("User not found.");
 
@@ -183,26 +153,25 @@ namespace TurkcellBank.Web_API.Controllers
                 return BadRequest("User is already deactivated.");
 
             user.IsActive = false;
-            _context.Users.Update(user);
-            await _context.SaveChangesAsync();
+            _users.Update(user);
+            await _users.SaveChangesAsync();
 
             return Ok(new { message = "User has been deleted" });
         }
+
         [Authorize]
         [HttpPost("close/{AccountID}")]
-        public async Task<IActionResult> CloseAccount(int AccountID)
+        public async Task<IActionResult> CloseAccount(int accountId)
         {
             var userIdClaim = User.FindFirst("user_id")?.Value;
-            if (string.IsNullOrEmpty(userIdClaim))
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
                 return Unauthorized("Invalid token: missing user_id");
-            var user = await _context.Users.FindAsync(int.Parse(userIdClaim));
-            var userID = int.Parse(userIdClaim);
+
+            var user = await _users.GetByIdAsync(userId);
             if (user == null)
                 return NotFound("User not found");
 
-            var account = await _context.Accounts.FirstOrDefaultAsync(a => a.ID == AccountID && a.UserID == userID);
-
-            //Error Responses to the user
+            var account = user.Accounts.FirstOrDefault(a => a.ID == accountId);
             if (account == null)
                 return NotFound("Account not found.");
             if (!account.IsActive)
@@ -211,7 +180,7 @@ namespace TurkcellBank.Web_API.Controllers
                 return BadRequest("Account must be empty before closing.");
 
             account.IsActive = false;
-            await _context.SaveChangesAsync();
+            await _users.SaveChangesAsync();
 
             return Ok(new { message = "Account closed successfully" });
         }
@@ -220,76 +189,80 @@ namespace TurkcellBank.Web_API.Controllers
         [HttpPost("open")]
         public async Task<IActionResult> OpenAccount([FromBody] OpenAccountDTO dto)
         {
-            if (dto is null)
-                return BadRequest(new { success = false, message = "Geçersiz istek." });
-
-            //User Verification
-            var userIdClaim = User.FindFirst("user_id")?.Value;
-            if (string.IsNullOrEmpty(userIdClaim))
-                return Unauthorized("Invalid token: missing user_id");
-            var user = await _context.Users.FindAsync(int.Parse(userIdClaim));
-            var userID = int.Parse(userIdClaim);
-            if (user == null)
-                return NotFound("User not found");
-
-            //Account Data Validation
-            var accountType = (dto.AccountType ?? string.Empty).Trim();
-            var currency = (dto.CurrencyCode ?? string.Empty).Trim().ToUpperInvariant();
-            var initial = dto.InitialDeposit;
-
-            if (string.IsNullOrWhiteSpace(accountType))
-                return BadRequest(new { success = false, message = "Hesap türü zorunlu." });
-
-            if (string.IsNullOrWhiteSpace(currency))
-                return BadRequest(new { success = false, message = "Para birimi zorunlu." });
-
-            var account = new Account
+            try
             {
-                UserID = userID,
-                AccountType = accountType,
-                CurrencyCode = currency,
-                Balance = initial,
-                IBAN = string.Empty,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow
-            };
+                if (dto is null)
+                    return BadRequest(new { success = false, message = "Geçersiz istek." });
 
-            _context.Accounts.Add(account);
-            await _context.SaveChangesAsync();   //accountID is generated after SaveChangesAsync
+                //User Verification
+                var userIdClaim = User.FindFirst("user_id")?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+                    return Unauthorized("Invalid token: missing user_id");
+                var user = await _users.GetByIdAsync(userId);
+                if (user == null)
+                    return NotFound("User not found");
 
-            account.IBAN = _ibanGenerator.Generate(userID, account.ID);
-            _context.Accounts.Update(account);
-            await _context.SaveChangesAsync();
+                //Account Data Validation
+                var accountType = (dto.AccountType ?? string.Empty).Trim();
+                var currency = (dto.CurrencyCode ?? string.Empty).Trim().ToUpperInvariant();
+                var initial = dto.InitialDeposit;
 
-            var result = new
+                if (string.IsNullOrWhiteSpace(accountType))
+                    return BadRequest("Hesap türü zorunlu.");
+                if (string.IsNullOrWhiteSpace(currency))
+                    return BadRequest("Para birimi zorunlu.");
+
+                var account = new Account
+                {
+                    UserID = userId,
+                    AccountType = accountType,
+                    CurrencyCode = currency,
+                    Balance = initial,
+                    IBAN = string.Empty,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                user.Accounts.Add(account);
+                await _users.SaveChangesAsync();
+
+                account.IBAN = _ibanGenerator.Generate(userId, account.ID);
+                await _users.SaveChangesAsync();
+
+                var result = new
+                {
+                    account.ID,
+                    account.AccountType,
+                    account.CurrencyCode,
+                    account.IBAN,
+                    account.Balance,
+                    account.IsActive,
+                    account.CreatedAt
+                };
+                return Ok(new { success = true, data = result });
+            }
+            catch (Exception)
             {
-                account.ID,
-                account.AccountType,
-                account.CurrencyCode,
-                account.IBAN,
-                account.Balance,
-                account.IsActive,
-                account.CreatedAt
-            };
-
-            return Ok(new { success = true, data = result });
+                return StatusCode(500, new { success = false, message = "An internal error occurred. Please try again later." });
+            }
         }
 
-        // Transfer money between accounts
         [Authorize]
         [HttpPost("transfer")]
         public async Task<IActionResult> Transfer([FromBody] TransferRequestDTO request, CancellationToken ct)
         {
             if (request == null)
                 return BadRequest("Transfer request cannot be null.");
+
             var userIdClaim = User.FindFirst("user_id")?.Value;
-            if (string.IsNullOrEmpty(userIdClaim))
-                return Unauthorized("Invalid token: missing user_id");
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+                return Unauthorized(new { success = false, message = "Invalid token: missing or invalid user_id." });
+
             int userID = int.Parse(userIdClaim);
             try
             {
-                var result = await _transactionService.TransferAsync(userID, request);
-                return Ok(result);
+                var result = await _transactionService.TransferAsync(userId, request, ct);
+                return Ok(new { success = true, data = result });
             }
             catch (Exception ex)
             {

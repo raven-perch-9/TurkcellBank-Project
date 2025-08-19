@@ -1,6 +1,7 @@
 ﻿using System.Data;
 using Microsoft.EntityFrameworkCore;
 using TurkcellBank.Application.DTOs;
+using TurkcellBank.Application.User.DTOs;
 using TurkcellBank.Domain;
 using TurkcellBank.Domain.Enums;
 using TurkcellBank.Infrastructure.Data;
