@@ -1,7 +1,7 @@
 ﻿// Data Type of the OpenAccount Request
 // This DTO is used for opening a new account.
 
-namespace TurkcellBank.Application.DTOs
+namespace TurkcellBank.Application.Common.DTOs
 {
     public class OpenAccountDTO
     {

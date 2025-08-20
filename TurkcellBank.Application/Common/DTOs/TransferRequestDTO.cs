@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TurkcellBank.Application.DTOs
+namespace TurkcellBank.Application.Common.DTOs
 {
     public class TransferRequestDTO
     {

@@ -4,14 +4,14 @@ using TurkcellBank.Application.Common.Abstractions;
 using TurkcellBank.Domain;
 using TurkcellBank.Infrastructure.Data;
 
-namespace TurkcellBank.Infrastructure.Repositories
+namespace TurkcellBank.Infrastructure.Data.Repositories
 {
     public sealed class UserRepository : IUserRepository
     {
         private readonly AppDbContext _db;
         public UserRepository(AppDbContext db) => _db = db;
 
-        public Task<TurkcellBank.Domain.User?> GetByIdAsync(int id)
+        public Task<User?> GetByIdAsync(int id)
         {
             return _db.Users
                 .Include(u => u.Accounts)

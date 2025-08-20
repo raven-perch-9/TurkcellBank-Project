@@ -8,7 +8,7 @@
         public int No { get; set; } // Term Months
         public decimal PrincipalPortion { get; set; }
         public decimal InterestPortion { get; set; }
-        public decimal PayementAmount { get; set; } // Principal + Interest
+        public decimal PaymentAmount { get; set; } // Principal + Interest
         public decimal RemainingPrincipal { get; set; }
         public DateTime DueDate { get; set; }
 

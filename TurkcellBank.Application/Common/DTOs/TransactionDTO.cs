@@ -1,6 +1,6 @@
 ﻿using TurkcellBank.Domain.Enums;
 
-namespace TurkcellBank.Application.DTOs
+namespace TurkcellBank.Application.Common.DTOs
 {
     public class TransactionDTO
     {

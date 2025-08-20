@@ -10,7 +10,7 @@ using TurkcellBank.Application.Common.Abstractions;
 using TurkcellBank.Infrastructure.Data;
 using TurkcellBank.Infrastructure.Services;
 using TurkcellBank.Infrastructure.Options;
-using TurkcellBank.Infrastructure.Repositories;
+using TurkcellBank.Infrastructure.Data.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 

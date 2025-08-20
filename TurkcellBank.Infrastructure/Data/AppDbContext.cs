@@ -8,8 +8,6 @@ namespace TurkcellBank.Infrastructure.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options) { }
-
-        // Add your tables (DbSets) here
         public DbSet<User> Users { get; set; }
         public DbSet<Account> Accounts { get; set; }
         public DbSet<Transaction> Transactions { get; set; }

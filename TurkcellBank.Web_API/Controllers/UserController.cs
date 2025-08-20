@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
 using System.Security.Claims;
 using TurkcellBank.Application.Common.Abstractions;
-using TurkcellBank.Application.DTOs;
+using TurkcellBank.Application.Common.DTOs;
 using TurkcellBank.Application.User.DTOs;
 using TurkcellBank.Application.User.Services.Interfaces;
 using TurkcellBank.Domain;

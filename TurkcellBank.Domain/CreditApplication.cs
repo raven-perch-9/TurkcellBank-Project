@@ -12,7 +12,7 @@ namespace TurkcellBank.Domain
         public string Occupation { get; set; } = string.Empty;
         public decimal Principle { get; set; }
         public int TermMonths { get; set; }
-        public float AnnualRate { get; set; }
+        public decimal AnnualRate { get; set; }
 
         // WorkFlow
         public CreditStatus Status { get; set; } = CreditStatus.Pending;
