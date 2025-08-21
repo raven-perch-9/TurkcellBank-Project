@@ -6,5 +6,6 @@ namespace TurkcellBank.Domain.Enums
     {
         EFT = 1, // Electronic Funds Transfer
         Havale = 2, // Internal (same bank)
+        CreditDisbursement = 3, // Credit disbursement
     }
 }

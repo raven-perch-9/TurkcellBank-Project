@@ -1,15 +1,14 @@
-﻿using BCrypt.Net;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
-using System.Security.Claims;
 using TurkcellBank.Application.Common.Abstractions;
 using TurkcellBank.Application.Common.DTOs;
+using TurkcellBank.Application.Common.Services.Interfaces;
+using TurkcellBank.Application.Common.Services;
 using TurkcellBank.Application.User.DTOs;
 using TurkcellBank.Application.User.Services.Interfaces;
 using TurkcellBank.Domain;
-using TurkcellBank.Infrastructure.Data;
+using TurkcellBank.Domain.Enums;
 using TurkcellBank.Infrastructure.Services;
 
 namespace TurkcellBank.Web_API.Controllers
@@ -18,21 +17,33 @@ namespace TurkcellBank.Web_API.Controllers
     [Route("api/[controller]")]
     public class UserController : ControllerBase
     {
-        //Depends on abstractions for context
         private readonly IUserRepository _users;
-        //I inject Athentication Service
+        private readonly IAccountRepository _accounts;
+        private readonly ITransactionRepository _transactions;
+        private readonly ICreditRepository _credits;
+        private readonly IDisbursementService _disburse;
+
         private readonly IAuthService _authService;
-        //Injecting IBAN Generation Service
         private readonly IGenerateIBAN _ibanGenerator;
-        //Injecting Transaction Service
         private readonly ITransactionService _transactionService;
-        public UserController(IUserRepository userRepository, IAuthService authService, IGenerateIBAN ibanGenerator,
-                                                    ITransactionService transactionService)
+
+        public UserController(IUserRepository users, 
+                              IAccountRepository accounts,
+                              ITransactionRepository transactions,
+                              ICreditRepository credits,
+                              IAuthService authService,
+                              IGenerateIBAN ibanGenerator,
+                              ITransactionService transactionService,
+                              IDisbursementService disburse)
         {
-            _users = userRepository;
+            _users = users;
+            _accounts = accounts;
+            _credits = credits;
+            _transactions = transactions;
             _authService = authService;
             _ibanGenerator = ibanGenerator;
             _transactionService = transactionService;
+            _disburse = disburse;
         }
 
         [HttpPost("register")]
@@ -267,6 +278,80 @@ namespace TurkcellBank.Web_API.Controllers
             catch (Exception ex)
             {
                 return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        [Authorize]
+        [HttpPost("credit-apply")]
+        public async Task<IActionResult> ApplyForCredit([FromBody] CreditApplyDTO dto, CancellationToken ct = default)
+        {
+            if (dto == null)
+                return BadRequest("Credit application data cannot be null.");
+            if (dto.RequestedAmount <= 0)
+                return BadRequest("Requested amount must be greater than zero.");
+            if (dto.TermMonths <= 0)
+                return BadRequest("Term months must be greater than zero.");
+
+            var userIdClaim = User.FindFirst("user_id")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+                return Unauthorized(new { success = false, message = "Invalid token: missing or invalid user_id." });
+
+            try
+            {
+                var apply = new CreditApplication
+                {
+                    UserID = userId,
+                    RequestedAmount = dto.RequestedAmount,
+                    AcceptedAmount = 0m, // admin will decide later
+                    MonthlyIncome = dto.MonthlyIncome,
+                    Occupation = dto.Occupation,
+                    TermMonths = dto.TermMonths,
+                    AnnualRate = dto.AnnualRate,
+                    Status = CreditStatus.Pending,
+                    CreatedAt = DateTime.UtcNow
+                };
+                
+                await _credits.AddApplicationAsync(apply);
+
+                return Ok(new 
+                { 
+                    success = true, 
+                    message = "Credit Application Submitted. Pending admin review.",
+                    data = new
+                    {
+                        id = apply.ID,
+                        requestedAmount = apply.RequestedAmount,
+                        term = apply.TermMonths,
+                        status = apply.Status.ToString()
+                    }
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
+        [Authorize]
+        [HttpPost("disburse/{id:int}")]
+        public async Task<IActionResult> DisburseCredit(int id, CancellationToken ct = default)
+        {
+            try
+            {
+                var ok = await _disburse.DisburseAsync(id, ct);
+                return Ok(new { success = ok, message = "Credit application disbursed successfully." });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
     }

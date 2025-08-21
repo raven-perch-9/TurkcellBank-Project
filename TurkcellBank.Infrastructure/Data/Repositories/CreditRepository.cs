@@ -46,6 +46,12 @@ namespace TurkcellBank.Infrastructure.Data.Repositories
             return _db.SaveChangesAsync();
         }
 
+        public Task UpdateApplicationAsync(CreditApplication app)
+        {
+            _db.CreditApplications.Update(app);
+            return _db.SaveChangesAsync();
+        }
+
         // Add multiple installments
         public Task AddInstallmentsAsync(IEnumerable<CreditInstallment> items)
         {
@@ -58,6 +64,11 @@ namespace TurkcellBank.Infrastructure.Data.Repositories
         {
             _db.CreditInstallments.Update(item);
             return _db.SaveChangesAsync();
+        }
+
+        public async Task SaveChangesAsync(CancellationToken ct = default)
+        {
+            await _db.SaveChangesAsync(ct);
         }
     }
 }

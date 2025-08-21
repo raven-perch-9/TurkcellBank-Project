@@ -1,7 +1,7 @@
 ﻿namespace TurkcellBank.Application.Common.Services.Interfaces
 {
-    internal interface IDisbursementService
+    public interface IDisbursementService
     {
-        Task DisburseAsync(int creidtApplicationId, CancellationToken ct = default);
+        Task<bool> DisburseAsync(int creditApplicationId, CancellationToken ct = default);
     }
 }

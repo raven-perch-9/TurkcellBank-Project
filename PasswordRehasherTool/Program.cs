@@ -1,10 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using TurkcellBank.Infrastructure.Data;
-using TurkcellBank.Infrastructure.Services;
+using TurkcellBank.Application.User.Services;
 using TurkcellBank.Domain; // Assuming User entity is here
-using System;
-using System.Linq;
 
 class Program
 {

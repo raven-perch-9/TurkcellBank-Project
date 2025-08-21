@@ -6,7 +6,7 @@ namespace TurkcellBank.Application.Common.Abstractions
     public interface IAccountRepository
     {
         Task<Account?> GetByIdAsync(int id, CancellationToken ct = default);
-        Task<IReadOnlyList<Account>> GetByUserAsync(int userId, CancellationToken ct = default);
+        Task<IReadOnlyList<Account>> GetByUserIdAsync(int userId, CancellationToken ct = default);
 
         Task<Account?> GetMainTryAccountAsync(int userId, CancellationToken ct = default);
 

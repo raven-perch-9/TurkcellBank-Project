@@ -12,7 +12,9 @@ namespace TurkcellBank.Application.Common.Abstractions
         Task<IReadOnlyList<CreditInstallment>> GetOverdueInstallmentsAsync(DateTime asOf);
 
         Task AddApplicationAsync(CreditApplication app);
+        Task UpdateApplicationAsync(CreditApplication app);
         Task AddInstallmentsAsync(IEnumerable<CreditInstallment> items);
         Task UpdateInstallmentsAsync(CreditInstallment item);
+        Task SaveChangesAsync(CancellationToken ct = default);
     }
 }

@@ -1,15 +1,7 @@
-﻿using System;
-using System.Linq;
+﻿using TurkcellBank.Application.Common.Abstractions;
 
 namespace TurkcellBank.Infrastructure.Services
 {
-    public interface IGenerateIBAN
-    {
-        string Generate(int userID, int accountID);
-        bool Validate(string IBAN);
-        (int UserID, int AccountID) Parse(string IBAN);
-    }
-    
     public class GenerateIBAN : IGenerateIBAN
     {
         private const string CountryCode = "TR"; // Example country code for Turkey

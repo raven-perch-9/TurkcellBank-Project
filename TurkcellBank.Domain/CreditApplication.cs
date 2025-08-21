@@ -6,6 +6,8 @@ namespace TurkcellBank.Domain
     {
         public int ID { get; set; }
         public int UserID { get; set; }
+        public decimal RequestedAmount { get; set; }
+        public decimal AcceptedAmount { get; set; }
 
         // User Economic Information
         public decimal MonthlyIncome { get; set; }
@@ -20,6 +22,7 @@ namespace TurkcellBank.Domain
         public DateTime? DecidedAt { get; set; }
         public string? DecisionBy { get; set; }
         public string? DecisionNote { get; set; }
+        public DateTime? DisbursedAt { get; set; }
 
         // Navigation
         public List<CreditInstallment> Schedule { get; set; } = new();

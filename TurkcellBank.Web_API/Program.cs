@@ -7,6 +7,8 @@ using System.IdentityModel.Tokens.Jwt;
 using TurkcellBank.Application.User.Services;
 using TurkcellBank.Application.User.Services.Interfaces;
 using TurkcellBank.Application.Common.Abstractions;
+using TurkcellBank.Application.Common.Services.Interfaces;
+using TurkcellBank.Application.Common.Services;
 using TurkcellBank.Infrastructure.Data;
 using TurkcellBank.Infrastructure.Services;
 using TurkcellBank.Infrastructure.Options;
@@ -25,10 +27,17 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+builder.Services.AddScoped<ICreditRepository, CreditRepository>();
+
 builder.Services.AddScoped<IGenerateIBAN, GenerateIBAN>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IDisbursementService, DisbursementService>();
+
 // Swagger Authorize Function
 builder.Services.AddSwaggerGen(c =>
 {
