@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using TurkcellBank.Domain.Enums;
 
 namespace TurkcellBank.Domain
 {
@@ -11,8 +7,8 @@ namespace TurkcellBank.Domain
         public int ID { get; set; }
         public int UserID { get; set; }
         public string IBAN { get; set; } = null!;
-        public string AccountType { get; set; } = null!;
-        public string CurrencyCode { get; set; } = null!;
+        public AccountType AccountType { get; set; }
+        public CurrencyCode CurrencyCode { get; set; }
         public decimal Balance { get; set; }
         public DateTime CreatedAt { get; set; }
         public User User { get; set; } = null!;

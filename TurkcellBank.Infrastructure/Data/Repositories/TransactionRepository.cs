@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using TurkcellBank.Application.Common.Abstractions;
 using TurkcellBank.Domain;
 using TurkcellBank.Domain.Enums;
@@ -8,7 +9,13 @@ namespace TurkcellBank.Infrastructure.Data.Repositories
     public sealed class TransactionRepository : ITransactionRepository
     {
         private readonly AppDbContext _db;
-        public TransactionRepository(AppDbContext db) => _db = db;
+        private readonly ILogger<TransactionRepository>? _logger;
+
+        public TransactionRepository(AppDbContext db, ILogger<TransactionRepository>? logger = null)
+        {
+            _db = db;
+            _logger = logger;
+        }
 
         public async Task<Transaction?> GetByIdAsync(int id, CancellationToken ct = default)
         {
@@ -73,7 +80,18 @@ namespace TurkcellBank.Infrastructure.Data.Repositories
 
         public async Task AddAsync(Transaction tx, CancellationToken ct = default)
         {
-            await _db.Transactions.AddAsync(tx, ct);
+            try
+            {
+                await _db.Transactions.AddAsync(tx, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "AddAsync failed for Transaction. FromAccountID={FromAccountID}," +
+                                      " ToAccountID={ToAccountID}, Amount={Amount}, Type={Type}, Status={Status}",
+                                      tx.FromAccountID, tx.ToAccountID, tx.Amount, tx.Type, tx.Status);
+                throw new InvalidOperationException(
+                    $"TransactionRepository.AddAsync failed: {ex.Message}", ex);
+            }
         }
 
         public async Task AddRangeAsync(IEnumerable<Transaction> txs, CancellationToken ct = default)
@@ -83,13 +101,39 @@ namespace TurkcellBank.Infrastructure.Data.Repositories
 
         public async Task UpdateAsync(Transaction tx, CancellationToken ct = default)
         {
-            _db.Transactions.Update(tx);
-            await Task.CompletedTask;
+            try
+            { 
+                _db.Transactions.Update(tx);
+                await Task.CompletedTask;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "UpdateAsync failed for Transaction ID={TransactionID}", tx.ID);
+                throw new InvalidOperationException(
+                    $"TransactionRepository.UpdateAsync failed: {ex.Message}", ex);
+            }
         }
 
         public async Task<int> SaveChangesAsync(CancellationToken ct = default)
         {
-            return await _db.SaveChangesAsync(ct);
+            try
+            {
+                return await _db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException ex)
+            {
+                var inner = ex.InnerException?.Message ?? "(no inner exception)";
+                _logger?.LogError(ex, "SaveChangesAsync failed: Inner: {InnerMessage}", inner);
+
+                throw new InvalidOperationException(
+                    $"TransactionRepository.SaveChanges failed. SQL/EF detail: {inner}", ex);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "SaveChangesAsync failed: {Message}", ex.Message);
+                throw new InvalidOperationException(
+                    $"TransactionRepository.SaveChanges failed: {ex.Message}", ex);
+            }
         }
     }
 }

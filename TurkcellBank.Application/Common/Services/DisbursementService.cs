@@ -43,8 +43,8 @@ namespace TurkcellBank.Application.Common.Services
                 main = new Account
                 {
                     UserID = app.UserID,
-                    AccountType = "Vadesiz",
-                    CurrencyCode = "TRY",
+                    AccountType = AccountType.VadesizMevduat,
+                    CurrencyCode = CurrencyCode.TRY,
                     Balance = 0,
                     IsActive = true
                 };

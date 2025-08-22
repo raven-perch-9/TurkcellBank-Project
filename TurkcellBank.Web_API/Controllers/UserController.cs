@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Identity.Client;
 using TurkcellBank.Application.Common.Abstractions;
 using TurkcellBank.Application.Common.DTOs;
-using TurkcellBank.Application.Common.Services.Interfaces;
 using TurkcellBank.Application.Common.Services;
+using TurkcellBank.Application.Common.Services.Interfaces;
 using TurkcellBank.Application.User.DTOs;
 using TurkcellBank.Application.User.Services.Interfaces;
 using TurkcellBank.Domain;
@@ -213,22 +213,21 @@ namespace TurkcellBank.Web_API.Controllers
                 if (user == null)
                     return NotFound("User not found");
 
-                //Account Data Validation
-                var accountType = (dto.AccountType ?? string.Empty).Trim();
-                var currency = (dto.CurrencyCode ?? string.Empty).Trim().ToUpperInvariant();
-                var initial = dto.InitialDeposit;
+                if (!Enum.IsDefined(typeof(AccountType), dto.AccountType))
+                    return BadRequest(new { success = false, message = "Geçersiz hesap türü." });
 
-                if (string.IsNullOrWhiteSpace(accountType))
-                    return BadRequest("Hesap türü zorunlu.");
-                if (string.IsNullOrWhiteSpace(currency))
-                    return BadRequest("Para birimi zorunlu.");
+                if (!Enum.IsDefined(typeof(CurrencyCode), dto.CurrencyCode))
+                    return BadRequest(new { success = false, message = "Geçersiz para birimi." });
+
+                if (dto.InitialDeposit < 0)
+                    return BadRequest(new { success = false, message = "Başlangıç bakiyesi negatif olamaz." });
 
                 var account = new Account
                 {
                     UserID = userId,
-                    AccountType = accountType,
-                    CurrencyCode = currency,
-                    Balance = initial,
+                    AccountType = dto.AccountType,
+                    CurrencyCode = dto.CurrencyCode,
+                    Balance = dto.InitialDeposit,
                     IBAN = string.Empty,
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow
@@ -243,8 +242,8 @@ namespace TurkcellBank.Web_API.Controllers
                 var result = new
                 {
                     account.ID,
-                    account.AccountType,
-                    account.CurrencyCode,
+                    AccountType = account.AccountType.ToString(),
+                    CurrencyCode = account.CurrencyCode.ToString(),
                     account.IBAN,
                     account.Balance,
                     account.IsActive,
@@ -337,9 +336,55 @@ namespace TurkcellBank.Web_API.Controllers
         }
 
         [Authorize]
+        [HttpPost("credit-approve/{id:int}")]
+        public async Task<IActionResult> ApproveCredit(int id, CreditApprovalDto dto, CancellationToken ct)
+        {
+            var userIdClaim = User.FindFirst("user_id")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+                return Unauthorized(new { success = false, message = "Invalid token: missing or invalid user_id." });
+
+            var app = await _credits.GetApplicationByIdAsync(id);
+            if (app == null)
+                return NotFound(new { success = false, message = "Credit application not found." });
+            if (app.Status != CreditStatus.Pending)
+                return BadRequest(new { success = false, message = "Only pending applications can be approved." });
+
+            app.Status = CreditStatus.Approved;
+            app.AcceptedAmount = dto.AcceptedAmount;
+            app.TermMonths = dto.TermMonths;
+            app.AnnualRate = dto.AnnualRate;
+            app.DecidedAt = dto.DecidedAt ?? DateTime.UtcNow;
+            app.DecisionBy = dto.DecisionBy ?? User.Identity?.Name;
+            app.DecisionNote = dto.DecisionNote;
+
+            await _credits.UpdateApplicationAsync(app);
+            await _credits.SaveChangesAsync(ct);
+
+            return Ok(new
+            {
+                success = true,
+                message = "Credit application approved.",
+                data = new
+                {
+                    app.ID,
+                    app.AcceptedAmount,
+                    app.TermMonths,
+                    app.AnnualRate,
+                    app.DecidedAt,
+                    app.DecisionBy,
+                    app.DecisionNote,
+                    app.Status
+                }
+            });
+        }
+
+        [Authorize]
         [HttpPost("disburse/{id:int}")]
         public async Task<IActionResult> DisburseCredit(int id, CancellationToken ct = default)
         {
+            var userIdClaim = User.FindFirst("user_id")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+                return Unauthorized(new { success = false, message = "Invalid token: missing or invalid user_id." });
             try
             {
                 var ok = await _disburse.DisburseAsync(id, ct);

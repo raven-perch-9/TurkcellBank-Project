@@ -26,7 +26,8 @@ namespace TurkcellBank.Infrastructure.Data.Repositories
             await _db.Accounts
             .AsNoTracking()
             .Where(a => a.UserID == userId
-                     && a.AccountType == "Vadesiz"
+                     && a.AccountType == AccountType.VadesizMevduat
+                     && a.CurrencyCode == CurrencyCode.TRY
                      && a.IsActive)
             .FirstOrDefaultAsync(ct);
 

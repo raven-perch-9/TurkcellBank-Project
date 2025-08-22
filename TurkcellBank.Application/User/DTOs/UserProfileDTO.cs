@@ -1,4 +1,6 @@
-﻿namespace TurkcellBank.Application.User.DTOs
+﻿using TurkcellBank.Domain.Enums;
+
+namespace TurkcellBank.Application.User.DTOs
 {
     // User Data Below
     public class UserProfileDTO
@@ -11,11 +13,11 @@
 
     // Account Data goes below
     public List<int> AccountIDs { get; set; } = null!;
-    public List<string> AccountTypes { get; set; } = null!;
+    public List<AccountType> AccountTypes { get; set; } = null!;
     public List<string> IBANs { get; set; } = null!;
     public List<decimal> Balances  { get; set; } = null!;
     public List<DateTime> AccountCreatedDates { get; set; } = null!;
-    public List<string> CurrencyCode { get; set; } = null!;
+    public List<CurrencyCode> CurrencyCode { get; set; } = null!;
     public List<bool> IsActive { get; set; } = null!;
     }
 }
