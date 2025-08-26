@@ -1,4 +1,4 @@
-﻿namespace TurkcellBank.Domain
+﻿namespace TurkcellBank.Domain.Entities
 {
     public class CreditInstallment
     {

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
 using TurkcellBank.Application.Common.Abstractions;
 using TurkcellBank.Application.Common.DTOs;
@@ -8,6 +9,7 @@ using TurkcellBank.Application.Common.Services.Interfaces;
 using TurkcellBank.Application.User.DTOs;
 using TurkcellBank.Application.User.Services.Interfaces;
 using TurkcellBank.Domain;
+using TurkcellBank.Domain.Entities;
 using TurkcellBank.Domain.Enums;
 using TurkcellBank.Infrastructure.Services;
 
@@ -22,10 +24,12 @@ namespace TurkcellBank.Web_API.Controllers
         private readonly ITransactionRepository _transactions;
         private readonly ICreditRepository _credits;
         private readonly IDisbursementService _disburse;
+        private readonly IPaymentRepository _payments;
 
         private readonly IAuthService _authService;
         private readonly IGenerateIBAN _ibanGenerator;
         private readonly ITransactionService _transactionService;
+        private readonly IPaymentService _paymentService;
 
         public UserController(IUserRepository users, 
                               IAccountRepository accounts,
@@ -34,7 +38,9 @@ namespace TurkcellBank.Web_API.Controllers
                               IAuthService authService,
                               IGenerateIBAN ibanGenerator,
                               ITransactionService transactionService,
-                              IDisbursementService disburse)
+                              IDisbursementService disburse,
+                              IPaymentRepository payments,
+                              IPaymentService paymentService)
         {
             _users = users;
             _accounts = accounts;
@@ -44,6 +50,8 @@ namespace TurkcellBank.Web_API.Controllers
             _ibanGenerator = ibanGenerator;
             _transactionService = transactionService;
             _disburse = disburse;
+            _payments = payments;
+            _paymentService = paymentService;
         }
 
         [HttpPost("register")]
@@ -335,7 +343,7 @@ namespace TurkcellBank.Web_API.Controllers
             }
         }
 
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         [HttpPost("credit-approve/{id:int}")]
         public async Task<IActionResult> ApproveCredit(int id, CreditApprovalDto dto, CancellationToken ct)
         {
@@ -378,7 +386,7 @@ namespace TurkcellBank.Web_API.Controllers
             });
         }
 
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         [HttpPost("disburse/{id:int}")]
         public async Task<IActionResult> DisburseCredit(int id, CancellationToken ct = default)
         {
@@ -398,6 +406,93 @@ namespace TurkcellBank.Web_API.Controllers
             {
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("credit-get")]
+        public async Task<IActionResult> GetAllCreditApplications()
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst("user_id")?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+                    return Unauthorized(new { success = false, message = "Invalid token: missing or invalid user_id." });
+
+                var apps = await _credits.GetAllApplicationsAsync();
+                var result = apps.Select(app => new GetCredAppsDTO
+                {
+                    ID = app.ID,
+                    UserID = app.UserID,
+                    RequestedAmount = app.RequestedAmount,
+                    AcceptedAmount = app.AcceptedAmount,
+                    MonthlyIncome = app.MonthlyIncome,
+                    Occupation = app.Occupation,
+                    Principle = app.Principle,
+                    TermMonths = app.TermMonths,
+                    AnnualRate = app.AnnualRate,
+                    Status = app.Status,
+                    CreatedAt = app.CreatedAt,
+                    DecidedAt = app.DecidedAt,
+                    DecisionBy = app.DecisionBy,
+                    DecisionNote = app.DecisionNote,
+                    DisbursedAt = app.DisbursedAt
+                }).ToList();
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new 
+                {
+                    success = false,
+                    message = "Unexpected error while retrieving credit applications.",
+                    detail = ex.Message
+                });
+            }
+        }
+
+        [Authorize]
+        [HttpPost("payment-request")]
+        public async Task<ActionResult<PaymentResponseDTO>> CreatePaymentRequest([FromBody] PaymentRequestDTO dto)
+        {
+            if (dto is null) return BadRequest("Body is required.");
+
+            var userIdClaim = User.FindFirst("user_id")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+                return Unauthorized(new { success = false, message = "Invalid token: missing or invalid user_id." });
+            
+            var created = await _paymentService.InitiateAsync(dto);
+            
+            return CreatedAtRoute("GetPaymentById", new { id = created.PaymentId }, created);
+        }
+
+        [Authorize]
+        [HttpPost("payment-verify")]
+        public async Task<ActionResult<PaymentResponseDTO>> Verify3DS([FromBody] ThreeDSVerifyDTO dto)
+        {
+            if (dto is null) return BadRequest("Body is required.");
+
+            var userIdClaim = User.FindFirst("user_id")?.Value;
+            if (!int.TryParse(userIdClaim, out var userId))
+                return Unauthorized(new { success = false, message = "Invalid or missing user_id claim." });
+
+            var verified = await _paymentService.VerifyThreeDSAsync(dto);
+            if (verified == null)
+                return BadRequest("3DS verification failed.");
+
+            return Ok(verified);
+        }
+
+        [Authorize]
+        [HttpPost("execute-payment/{id:int}")]
+        public async Task<ActionResult<PaymentResponseDTO>> CapturePayment(int id)
+        {
+            var userIdClaim = User.FindFirst("user_id")?.Value;
+            if (!int.TryParse(userIdClaim, out var userId))
+                return Unauthorized(new { success = false, message = "Invalid or missing user_id claim." });
+
+            var captured = await _paymentService.CaptureAsync(id);
+            return Ok(captured);
         }
     }
 }

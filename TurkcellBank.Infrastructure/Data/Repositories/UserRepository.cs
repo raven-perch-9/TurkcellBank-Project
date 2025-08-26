@@ -1,8 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
 using TurkcellBank.Application.Common.Abstractions;
-using TurkcellBank.Domain;
-using TurkcellBank.Infrastructure.Data;
+using TurkcellBank.Domain.Entities;
+
 
 namespace TurkcellBank.Infrastructure.Data.Repositories
 {

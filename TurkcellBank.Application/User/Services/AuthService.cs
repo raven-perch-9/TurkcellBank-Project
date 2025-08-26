@@ -1,7 +1,6 @@
 ﻿using TurkcellBank.Application.Common.Abstractions;
 using TurkcellBank.Application.User.DTOs;
 using TurkcellBank.Application.User.Services.Interfaces;
-using TurkcellBank.Domain;
 
 
 namespace TurkcellBank.Application.User.Services
@@ -47,7 +46,7 @@ namespace TurkcellBank.Application.User.Services
                 if (string.IsNullOrWhiteSpace(dto.Password))
                     throw new ArgumentException("Password cannot be empty.", nameof(dto.Password));
 
-                var user = new TurkcellBank.Domain.User
+                var user = new TurkcellBank.Domain.Entities.User
                 {
                     FullName = dto.FullName?.Trim() ?? string.Empty,
                     Email = dto.Email.Trim().ToLowerInvariant() ?? string.Empty,

@@ -1,6 +1,6 @@
 ﻿using TurkcellBank.Application.Common.Services.Interfaces;
 using TurkcellBank.Application.Common.Abstractions;
-using TurkcellBank.Domain;
+using TurkcellBank.Domain.Entities;
 using TurkcellBank.Domain.Enums;
 
 namespace TurkcellBank.Application.Common.Services
@@ -26,7 +26,6 @@ namespace TurkcellBank.Application.Common.Services
         public async Task<bool> DisburseAsync(int creditApplicationId, CancellationToken ct = default)
         {
             const int bankSourceAccountId = 2005;
-
             var app = await _credits.GetApplicationByIdAsync(creditApplicationId);
             if (app == null)
             {
@@ -36,7 +35,6 @@ namespace TurkcellBank.Application.Common.Services
             {
                 throw new InvalidOperationException($"Credit application must be approved before disbursement");
             }
-
             var main = await _accounts.GetMainTryAccountAsync(app.UserID, ct);
             if (main == null)
             {

@@ -1,0 +1,94 @@
+﻿@page "/credit-apply"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@layout MainLayout
+@using MudBlazor
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="p-6">
+
+	<!--HEADER-->
+	<MudPaper Class="mx-auto mb-1" Style="background:white; border-radius:16px; width:100%;">
+		<MudText Typo="Typo.h5" Align="Align.Center" Style="color:black; margin-bottom:20px">
+			Kredi Başvuru Sayfası
+		</MudText>
+	</MudPaper>
+
+	<!--CREDIT FORM-->
+	<MudPaper Class="p-4" Style="border-radius:20px; background:#F5F5F5;">
+		<MudText Typo="Typo.h5" Class="mb-3" Style="color:#004B93;">Kredi Başvuru Formu</MudText>
+		<MudForm @ref="_form" Model="credApp" OnValidSubmit="SubmitAsync">
+			<MudNumericField T="decimal" @bind-Value="credApp.RequestedAmount" Label="Kredi Tutarı" Variant="Variant.Outlined" Class="mb-3" />
+			<MudNumericField T="int" @bind-Value="credApp.TermMonths" Label="Geri Ödeme Süresi" Variant="Variant.Outlined" Class="mb-3" />
+			<MudNumericField T="decimal" @bind-Value="credApp.MonthlyIncome" Label="Aylık Gelir" Variant="Variant.Outlined" Class="mb-3" />
+			<MudTextField @bind-Value="credApp.Occupation" Label="Meslek" Variant="Variant.Outlined" Class="mb-3" />
+			<MudNumericField T="decimal" @bind-Value="credApp.AnnualRate" Label="Faiz Oranı" Variant="Variant.Outlined" Class="mb-3" />
+			<MudButton Color="Color.Primary" Variant="Variant.Filled" Class="mt-4" Type="Submit" OnClick="SubmitAsync"
+					Disabled="@_submitting" Loading="@_submitting">
+				Başvuruyu Gönder
+			</MudButton>
+		</MudForm>
+	</MudPaper>
+</MudContainer>
+
+@code {
+	private CreditApplicationModel credApp = new();
+	private bool _submitting;
+	private MudForm? _form;
+
+	protected override async Task OnInitializedAsync()
+	{
+		var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+		if (!string.IsNullOrWhiteSpace(token))
+			Http.DefaultRequestHeaders.Authorization =
+				new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+	}
+
+	private async Task SubmitAsync()
+	{
+		_submitting = true;
+
+		try
+		{
+			if (_form is not null)
+			{
+				await _form.Validate();
+				if (!_form.IsValid)
+				{
+					Snackbar.Add("Lütfen tüm alanları doğru şekilde doldurun.", Severity.Warning);
+					return;
+				}
+			}
+			var response = await Http.PostAsJsonAsync("api/user/credit-apply", credApp);
+			if (response.IsSuccessStatusCode)
+			{
+				credApp = new CreditApplicationModel(); // reset form
+				Snackbar.Add("Kredi başvurunuz alınmıştır. En kısa sürede tarafınıza dönüş yapılacaktır.", Severity.Success);
+			}
+			else
+			{
+				Snackbar.Add("Kredi başvurusu başarısız.", Severity.Error);
+			}
+		}
+		catch (Exception ex)
+		{
+			Snackbar.Add($"İstek hatası: {ex.Message}", Severity.Error);
+		}
+		finally
+		{
+			_submitting = false;
+		}
+	}
+	public class CreditApplicationModel
+	{
+		public decimal RequestedAmount { get; set; }
+		public int TermMonths { get; set; }
+		public decimal MonthlyIncome { get; set; }
+		public string Occupation { get; set; } = string.Empty;
+		public decimal AnnualRate { get; set; }
+	}
+}

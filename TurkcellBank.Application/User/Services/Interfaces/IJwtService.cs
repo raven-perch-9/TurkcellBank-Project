@@ -2,6 +2,6 @@
 {
     public interface IJwtService
     {
-        string GenerateToken(Domain.User user);
+        string GenerateToken(Domain.Entities.User user);
     }
 }

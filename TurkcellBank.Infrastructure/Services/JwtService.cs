@@ -1,11 +1,11 @@
-﻿using System;
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using TurkcellBank.Application.User.Services.Interfaces;
-using TurkcellBank.Domain;
+using TurkcellBank.Domain.Entities;
+
 
 namespace TurkcellBank.Infrastructure.Services
 {
@@ -18,14 +18,14 @@ namespace TurkcellBank.Infrastructure.Services
             _config = config;
         }
 
-        public string GenerateToken(TurkcellBank.Domain.User user)
+        public string GenerateToken(User user)
         {
             var claims = new[]
             {
                 new Claim("user_id", user.ID.ToString()),
                 new Claim("name", user.Username),
                 new Claim("email", user.Email),
-                new Claim("role", "User"),
+                new Claim(ClaimTypes.Role, user.Role.ToString()),
                 new Claim("created_at", new DateTimeOffset(user.CreatedAt).ToUnixTimeSeconds().ToString()),
             };
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));

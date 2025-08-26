@@ -1,4 +1,4 @@
-﻿using TurkcellBank.Domain;
+﻿using TurkcellBank.Domain.Entities;
 using TurkcellBank.Domain.Enums;
 
 namespace TurkcellBank.Application.Common.Abstractions

@@ -1,8 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TurkcellBank.Application.Common.Abstractions;
-using TurkcellBank.Domain;
-using TurkcellBank.Domain.Enums;
-using TurkcellBank.Infrastructure.Data.Repositories;
+using TurkcellBank.Domain.Entities;
+
 
 namespace TurkcellBank.Infrastructure.Data.Repositories
 {
@@ -20,8 +19,15 @@ namespace TurkcellBank.Infrastructure.Data.Repositories
         // Get all applications by user
         public async Task<IReadOnlyList<CreditApplication>> GetByUserAsync(int userId) =>
             await _db.CreditApplications
+                .AsNoTracking()
                 .Where(c => c.UserID == userId)
-                .Include(c => c.Schedule)
+                .OrderByDescending(c => c.CreatedAt)
+                .ToListAsync();
+
+        // Get all applications (for admin)
+        public async Task<IReadOnlyList<CreditApplication>> GetAllApplicationsAsync() =>
+            await _db.CreditApplications
+                .AsNoTracking()
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
 

@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using TurkcellBank.Application.Common.Abstractions;
-using TurkcellBank.Domain;
+using TurkcellBank.Domain.Entities;
 using TurkcellBank.Domain.Enums;
 
 namespace TurkcellBank.Infrastructure.Data.Repositories

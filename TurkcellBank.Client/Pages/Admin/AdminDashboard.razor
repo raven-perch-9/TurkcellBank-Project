@@ -1,0 +1,136 @@
+﻿@page "/admin"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+@using MudBlazor
+@layout MainLayout
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="p-6">
+
+    <MudText Typo="Typo.h4">Welcome, Admin</MudText>
+    <MudText Class="mud-text-secondary">Quick operational overview</MudText>
+
+        <!-- Pending -->
+    <MudPaper Class="p-4">
+        <MudText Typo="Typo.h6" Class="mb-2">Pending Credit Applications (@Pending.Count())</MudText>
+        <MudTable Items="Pending" Dense="true" Hover="true">
+            <HeaderContent>
+                <MudTh>ID</MudTh>
+                <MudTh>User</MudTh>
+                <MudTh Align="Right">Amount</MudTh>
+                <MudTh>Term</MudTh>
+                <MudTh>Date</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.ID</MudTd>
+                <MudTd>@context.UserID</MudTd>
+                <MudTd Align="Right">@context.RequestedAmount.ToString("N2")</MudTd>
+                <MudTd>@context.TermMonths mo</MudTd>
+                <MudTd>@context.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText Class="mud-text-secondary">No pending applications.</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    </MudPaper>
+
+    <!-- Concluded -->
+    <MudPaper Class="p-4">
+        <MudText Typo="Typo.h6" Class="mb-2">Concluded Applications (@Approved.Count())</MudText>
+        <MudTable Items="Approved" Dense="true" Hover="true">
+            <HeaderContent>
+                <MudTh>ID</MudTh>
+                <MudTh>User</MudTh>
+                <MudTh align="right">Amount</MudTh>
+                <MudTh>Status</MudTh>
+                <MudTh>Date</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.ID</MudTd>
+                <MudTd>@context.UserID</MudTd>
+                <MudTd Align="Right">@context.RequestedAmount.ToString("N2")</MudTd>
+                <MudTd>@context.TermMonths mo</MudTd>
+				<MudTd>
+                    <!--MudChip Color="@StatusColor(context.Status)" Variant="Variant.Filled">@context.Status</-->
+                </MudTd>
+                <MudTd>@context.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText Class="mud-text-secondary">Nothing concluded yet.</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<GetCredAppsModel> getCreds = new();
+    private static bool IsPending(string s) =>
+        s.Equals("Pending", StringComparison.OrdinalIgnoreCase) || s == "0";
+
+    private IEnumerable<GetCredAppsModel> Pending => 
+        getCreds.Where(x => IsPending(x.Status))
+            .OrderByDescending(x => x.CreatedAt);
+    private IEnumerable<GetCredAppsModel> Approved => 
+        getCreds.Where(x => !IsPending(x.Status))
+            .OrderByDescending(x => x.CreatedAt);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (!string.IsNullOrWhiteSpace(token))
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        await GetAllCreditApplications();
+    }
+
+    private async Task GetAllCreditApplications()
+    {
+        try
+        {
+            var response = await Http.GetFromJsonAsync<List<GetCredAppsModel>>("api/user/credit-get");
+            getCreds = response ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[Admin] credit-get failed: {ex.Message}");
+            getCreds = new();
+        } 
+        StateHasChanged();
+    }
+
+    private static string DisplayStatus(string s) => s switch
+    {
+        "0" => "Pending",
+        "1" => "Approved",
+        "2" => "Rejected",
+        "3" => "Disbursed",
+        "4" => "Closed",
+        "5" => "Defaulted",
+        _ => s
+    };
+
+    private class GetCredAppsModel
+    {
+        public int ID { get; set; }
+        public int UserID { get; set; }
+        public decimal RequestedAmount { get; set; }
+        public decimal? AcceptedAmount { get; set; }
+
+        public decimal MonthlyIncome { get; set; }
+        public string Occupation { get; set; } = string.Empty;
+        public decimal? Principle { get; set; }
+        public int TermMonths { get; set; }
+        public decimal AnnualRate { get; set; }
+
+        public string Status { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+        public DateTime? DecidedAt { get; set; }
+        public string? DecisionBy { get; set; }
+		public string? DecisionNote { get; set; }
+		public DateTime? DisbursedAt { get; set; }
+    }
+}
+

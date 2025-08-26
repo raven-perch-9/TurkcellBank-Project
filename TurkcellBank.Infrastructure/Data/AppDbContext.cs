@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using TurkcellBank.Domain;
+using TurkcellBank.Domain.Entities;
 
 namespace TurkcellBank.Infrastructure.Data
 {
@@ -13,6 +13,7 @@ namespace TurkcellBank.Infrastructure.Data
         public DbSet<Transaction> Transactions { get; set; }
         public DbSet<CreditApplication> CreditApplications { get; set; }
         public DbSet<CreditInstallment> CreditInstallments { get; set; }
+        public DbSet<Payment> Payments { get; set; }
 
         // Adding Transaction Configuration Class to the Context
         protected override void OnModelCreating(ModelBuilder modelBuilder)

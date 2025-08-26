@@ -1,10 +1,10 @@
 ﻿using System.Data;
 using Microsoft.EntityFrameworkCore;
 using TurkcellBank.Application.Common.DTOs;
-using TurkcellBank.Application.User.DTOs;
-using TurkcellBank.Domain;
+using TurkcellBank.Domain.Entities;
 using TurkcellBank.Domain.Enums;
 using TurkcellBank.Infrastructure.Data;
+
 
 namespace TurkcellBank.Infrastructure.Services
 {
@@ -144,4 +144,3 @@ namespace TurkcellBank.Infrastructure.Services
         }
     }
 }
-

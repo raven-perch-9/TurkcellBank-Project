@@ -1,6 +1,6 @@
 ﻿using TurkcellBank.Domain.Enums;
 
-namespace TurkcellBank.Domain
+namespace TurkcellBank.Domain.Entities
 {
     public class Account
     {

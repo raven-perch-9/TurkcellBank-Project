@@ -1,8 +1,7 @@
 ﻿using TurkcellBank.Application.Common.Abstractions;
-using TurkcellBank.Domain;
 using TurkcellBank.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+using TurkcellBank.Domain.Entities;
 
 namespace TurkcellBank.Infrastructure.Data.Repositories
 {
