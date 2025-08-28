@@ -1,14 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Identity.Client;
 using TurkcellBank.Application.Common.Abstractions;
 using TurkcellBank.Application.Common.DTOs;
-using TurkcellBank.Application.Common.Services;
 using TurkcellBank.Application.Common.Services.Interfaces;
 using TurkcellBank.Application.User.DTOs;
 using TurkcellBank.Application.User.Services.Interfaces;
-using TurkcellBank.Domain;
 using TurkcellBank.Domain.Entities;
 using TurkcellBank.Domain.Enums;
 using TurkcellBank.Infrastructure.Services;
@@ -462,8 +458,8 @@ namespace TurkcellBank.Web_API.Controllers
                 return Unauthorized(new { success = false, message = "Invalid token: missing or invalid user_id." });
             
             var created = await _paymentService.InitiateAsync(dto);
-            
-            return CreatedAtRoute("GetPaymentById", new { id = created.PaymentId }, created);
+
+            return Ok(created);
         }
 
         [Authorize]

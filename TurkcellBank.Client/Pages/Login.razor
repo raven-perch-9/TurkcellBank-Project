@@ -9,6 +9,15 @@
 @inject AuthenticationStateProvider AuthStateProvider
 
 <MudPaper Class="p-8" Elevation="8" Style="width:400px; background-color:white; border-radius:16px; border:20px solid white">
+    
+    @if (_loading)
+    {
+        <div class="overlay">
+            <MudProgressCircular Indeterminate="true" Size="Size.Large" />
+            <MudText class="mt-2">Giriş Yapılıyor...</MudText>
+        </div>
+    }
+
     <img src="Images/Male_Logo.jpg"
          alt="TurkcellBank Logo"
          style="width:200px; margin:0 auto 25px; display:block;" />
@@ -48,7 +57,7 @@
     }
 
     <MudText Class="mt-4 text-center" Style="color:#555;">
-        Don’t have an account? <MudLink Href="/register" Style="color:#003399; font-weight:500;">Register here</MudLink>
+        Kullanıcı hesabınız yok mu? <MudLink Href="/register" Style="color:#003399; font-weight:500;">Buradan başvurabilirsiniz.</MudLink>
     </MudText>
 </MudPaper>
 
@@ -56,9 +65,11 @@
     private LoginModel loginModel = new();
     private string message = string.Empty;
     private bool isSuccess;
+    private bool _loading = false;
 
     private async Task HandleLogin()
     {
+        _loading = true;
         try
         {
             var response = await Http.PostAsJsonAsync("api/user/login", loginModel);
@@ -83,6 +94,11 @@
         {
             message = $"Error: {ex.Message}";
             isSuccess = false;
+        }
+        finally
+        {
+            if (!isSuccess)
+                _loading = false;
         }
     }
 

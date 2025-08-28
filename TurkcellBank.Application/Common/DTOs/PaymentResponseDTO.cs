@@ -12,5 +12,7 @@ namespace TurkcellBank.Application.Common.DTOs
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? AuthorizedAt { get; set; }
         public DateTime? CapturedAt { get; set; }
+
+        public string? ThreeDSCode { get; set; }
     }
 }

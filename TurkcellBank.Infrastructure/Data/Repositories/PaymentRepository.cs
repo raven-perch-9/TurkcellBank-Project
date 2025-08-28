@@ -25,7 +25,7 @@ namespace TurkcellBank.Infrastructure.Data.Repositories
         }
 
         public Task<Payment> GetByIdAsync(int paymentId) => 
-            _db.Payments.FirstAsync(p => p.OrderId == paymentId);
+            _db.Payments.FirstOrDefaultAsync(p => p.Id == paymentId);
         public Task<List<Payment>> GetHistoryAsync(int userId) => _db.Payments
             .Where(p => p.UserId == userId)
             .OrderByDescending(p => p.CreatedAt)

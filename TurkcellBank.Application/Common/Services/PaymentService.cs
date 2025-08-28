@@ -4,6 +4,7 @@ using TurkcellBank.Application.Common.Abstractions;
 using TurkcellBank.Domain.Enums;
 using TurkcellBank.Domain.Entities;
 using System.Security.Cryptography;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace TurkcellBank.Application.Common.Services
 {
@@ -18,28 +19,31 @@ namespace TurkcellBank.Application.Common.Services
         {
             var p = new Payment
             {
-                UserId = req.UserId,
                 OrderId = req.OrderId,
                 Amount = req.Amount,
                 Currency = req.Currency,
-                CardMask = req.CardMask,
-                CardFingerprint = req.CardFingerprint,
                 Status = PaymentStatus.Initiated,
                 CreatedAt = DateTime.UtcNow
             };
 
+            string? code = null;
+
             if (needThreeDS(req))
             {
                 p.Status = PaymentStatus.Requires3DS;
-                p.ThreeDSChallengeID = Guid.NewGuid().ToString();
-                var code = GenerateCode();
+                code = GenerateCode();
                 p.ThreeDSCodeHash = Hash(code);
                 p.ThreeDSExpiresAt = DateTime.UtcNow.Add(ThreeDSWindow);
             }
 
             await _payments.AddAsync(p);
             await _payments.SaveChangesAsync();
-            return ToResponse(p);
+
+            var dto = ToResponse(p);
+
+            dto.ThreeDSCode = code;
+
+            return dto;
         }
 
         public async Task<PaymentResponseDTO> VerifyThreeDSAsync(ThreeDSVerifyDTO req)
@@ -79,18 +83,18 @@ namespace TurkcellBank.Application.Common.Services
             var items = await _payments.ListByUserAsync(userId);
             return items.Select(ToResponse).ToList();
         }
-        
+
         public async Task<PaymentResponseDTO?> GetAsync(int paymentId)
             => (await _payments.GetByIdAsync(paymentId)) is Payment p ? ToResponse(p) : null;
 
-        private static bool needThreeDS(PaymentRequestDTO r) => r.Amount >= 1_000m;
+        private static bool needThreeDS(PaymentRequestDTO r) => r.Amount > 0;
 
         private static string GenerateCode()
         {
             using var rng = RandomNumberGenerator.Create();
             Span<byte> bytes = stackalloc byte[4];
             rng.GetBytes(bytes);
-            return(BitConverter.ToUInt32(bytes) % 1_000_000).ToString();
+            return (BitConverter.ToUInt32(bytes) % 1_000_000).ToString();
         }
 
         private static string Hash(string s)
@@ -98,10 +102,10 @@ namespace TurkcellBank.Application.Common.Services
             using var sha = SHA256.Create();
             return Convert.ToHexString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(s)));
         }
-        
+
         private static PaymentResponseDTO ToResponse(Payment p) => new()
         {
-            PaymentId = p.OrderId,
+            PaymentId = p.Id,
             Status = p.Status,
             CardMask = p.CardMask,
             CreatedAt = p.CreatedAt,
