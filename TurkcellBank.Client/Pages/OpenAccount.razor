@@ -47,28 +47,47 @@
 
     private NewAccountModel newAccount = new();
 
-    private readonly List<string> accountTypes = new() { "Vadesiz Mevduat", "Vadeli Mevduat" };
-	private readonly List<string> currencyTypes = new() { "TL", "USD", "EUR" };
+    private readonly List<string> accountTypes = new() { "VadesizMevduat", "VadeliMevduat" };
+    private readonly List<string> currencyTypes = new() { "TRY", "USD", "EUR" };
+    private readonly Dictionary<string, int> accountTypeMap = new()
+        {
+            ["VadesizMevduat"] = 1,
+            ["VadeliMevduat"] = 2
+        };
+    private readonly Dictionary<string, int> currencyMap = new()
+        {
+            ["TRY"] = 1,
+            ["USD"] = 2,
+            ["EUR"] = 3
+        };
 
     private bool CanOpen => !string.IsNullOrWhiteSpace(newAccount.AccountType) &&
                             !string.IsNullOrWhiteSpace(newAccount.CurrencyCode);
-    
+
     private async Task OpenAccountAction()
     {
+        if (!CanOpen)
+        {
+            Snackbar.Add("Lütfen hesap türü ve para birimi seçiniz.", Severity.Warning);
+            return;
+        }
         try
         {
-            var response = await Http.PostAsJsonAsync("api/user/open", newAccount);
-            if (!CanOpen)
+            var body = new
             {
-                Snackbar.Add("Lütfen hesap türü ve para birimi seçiniz.", Severity.Warning);
-                return;
-            }
-            if (response.IsSuccessStatusCode && CanOpen)
+                accountType = accountTypeMap[newAccount.AccountType],
+                currencyCode = currencyMap[newAccount.CurrencyCode],
+                initialDeposit = 0m
+            };
+
+            var response = await Http.PostAsJsonAsync("api/user/open", body);
+
+            if (response.IsSuccessStatusCode)
             {
                 Snackbar.Add("Hesap başarıyla açıldı.", Severity.Success);
 
                 newAccount = new(); // Reset form
-		    	
+
                 StateHasChanged(); // Refresh UI
             }
             else
@@ -85,8 +104,8 @@
 
     public class NewAccountModel
     {
-        public string AccountType { get; set; } 
-		public string CurrencyCode { get; set; } 
-		public decimal InitialDeposit { get; set; } 
+        public string AccountType { get; set; } = string.Empty;
+        public string CurrencyCode { get; set; } = string.Empty;
+        public decimal InitialDeposit { get; set; } = 0m;
     }
 }
