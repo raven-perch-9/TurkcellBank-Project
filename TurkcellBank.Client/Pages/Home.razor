@@ -8,30 +8,29 @@
 @inject IJSRuntime JS
 
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="p-6">
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" DisableGutters="true" Class="p-6 px-0">
 
     <!-- WELCOME HEADER -->
     <MudPaper Class="mx-auto mb-1" Style="background:white; border-radius:16px; width:100%;">
         <MudText Typo="Typo.h5" Align="Align.Center" Style="color:black; margin-bottom:20px">
-            Welcome, @user?.FullName!
+            Hoşgeldiniz, @user?.FullName!
         </MudText>
     </MudPaper>
 
     <MudGrid GutterSize="2">
         <!-- ACCOUNTS (Left Column) -->
         <MudItem md="6">
-            <MudPaper Class="p-4" Style="border-radius:20px; height:400px; background:#F5F5F5;">
-                <MudText Typo="Typo.h5" Class="mb-3" Style="color:#004B93;">Your Accounts</MudText>
-                <MudTable Items="@accountRows" Hover="true" Dense="true" Style="background:white; border-radius:12px;">
+            <MudPaper Class="p-4" Style="border-radius:20px; height:216px; background:#F5F5F5; overflow:hidden">
+                <MudText Typo="Typo.h5" Class="mb-1" Align="Align.Center" Style="color:#004B93;">Hesaplarım</MudText>
+                <MudTable Items="@accountRows" Hover="true" Dense="true"  FixedHeader="true" Height="180px"
+                          Class="compact-columns" Style="background:white; border-radius:12px;">
                     <HeaderContent>
-                        <MudTh>Hesap Türü</MudTh>
-                        <MudTh>Para Birimi</MudTh>
-                        <MudTh>Bakiye</MudTh>
-                        <MudTh>IBAN</MudTh>
+                        <MudTh Style="font-weight:bold">Hesap Türü</MudTh>
+                        <MudTh Style="font-weight:bold">Bakiye</MudTh>
+                        <MudTh Style="font-weight:bold">IBAN</MudTh>
                     </HeaderContent>
                     <RowTemplate>
                         <MudTd>@context.AccountType</MudTd>
-                        <MudTd>@context.CurrencyCode</MudTd>
                         <MudTd>@context.Balance</MudTd>
                         <MudTd>@context.IBAN</MudTd>
                     </RowTemplate>
@@ -41,14 +40,25 @@
 
         <!-- CARDS (Right Column) -->
         <MudItem md="6">
-            <MudPaper Class="p-4" Style="border-radius:20px; height:400px; background:#F5F5F5;">
-                <MudText Typo="Typo.h5" Class="mb-3" Style="color:#004B93;">Your Cards</MudText>
-                <MudGrid GutterSize="2">
-                    @* cards go here *@
-                </MudGrid>
+            <MudPaper Class="p-4" Style="border-radius:20px; height:216px; background:#F5F5F5; overflow:hidden">
+                <MudText Typo="Typo.h5" Class="mb-1" Align="Align.Center" Style="color:#004B93;">Kartlarım</MudText>
+                <MudTable Items="@accountRows" Hover="true" Dense="true" FixedHeader="true" Height="180px"
+                          Class="compact-columns" Style="background:white; border-radius:12px;">
+                    <HeaderContent>
+                        <MudTh Style="font-weight:bold">Kart Türü</MudTh>
+                        <MudTh Style="font-weight:bold">Bakiye</MudTh>
+                        <MudTh Style="font-weight:bold">Kart Numarası</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd></MudTd>
+                        <MudTd></MudTd>
+                        <MudTd></MudTd>
+                    </RowTemplate>
+                </MudTable>
             </MudPaper>
         </MudItem>
     </MudGrid>
+    <MudTable 
 </MudContainer>
 
 
@@ -72,10 +82,16 @@
             {
                 if (user.IsActive[i])
                 {
+                    var firstWord = user.AccountTypes[i].Split(' ')[0];
+                    if (firstWord.Contains("Vadeli")) firstWord = "Vadeli";
+                    else if (firstWord.Contains("Vadesiz")) firstWord = "Vadesiz";
+                    else throw new InvalidOperationException($"Unknown account type: {user.AccountTypes[i]}");
+
+                    var merged = $"{firstWord} {user.CurrencyCode[i]} Hesabı";
+
                     accountRows.Add(new AccountRow
                         {
-                            AccountType = user.AccountTypes[i],
-                            CurrencyCode = user.CurrencyCode[i],
+                            AccountType = merged,
                             IBAN = user.IBANs[i],
                             Balance = user.Balances[i]
                         });
@@ -108,8 +124,20 @@
     public class AccountRow
     {
         public string AccountType { get; set; }
-		public string CurrencyCode { get; set; }
         public string IBAN { get; set; }
         public decimal Balance { get; set; }
     }
+
+    public class FXRates
+    {
+        public string CurrencyType { get; set; }
+        public decimal Value { get; set; }
+    }
 }
+
+<style>
+    .compact-columns .mud-table-cell {
+        padding-left: 15px !important;
+        padding-right: 15px !important;
+    }
+</style>

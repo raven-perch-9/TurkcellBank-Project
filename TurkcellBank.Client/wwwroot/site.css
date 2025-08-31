@@ -20,3 +20,8 @@
         background: rgba(255, 255, 255, 0.85);
     }
 }
+
+.compact-columns .mud-table-cell {
+    padding-left: 15px !important;
+    padding-right: 15px !important;
+}

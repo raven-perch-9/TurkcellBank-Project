@@ -26,6 +26,7 @@ namespace TurkcellBank.Web_API.Controllers
         private readonly IGenerateIBAN _ibanGenerator;
         private readonly ITransactionService _transactionService;
         private readonly IPaymentService _paymentService;
+        private readonly IFXFetcherService _fxFetcherService;
 
         public UserController(IUserRepository users, 
                               IAccountRepository accounts,
@@ -36,7 +37,8 @@ namespace TurkcellBank.Web_API.Controllers
                               ITransactionService transactionService,
                               IDisbursementService disburse,
                               IPaymentRepository payments,
-                              IPaymentService paymentService)
+                              IPaymentService paymentService,
+                              IFXFetcherService fxFetcherService)
         {
             _users = users;
             _accounts = accounts;
@@ -48,6 +50,7 @@ namespace TurkcellBank.Web_API.Controllers
             _disburse = disburse;
             _payments = payments;
             _paymentService = paymentService;
+            _fxFetcherService = fxFetcherService;
         }
 
         [HttpPost("register")]
@@ -489,6 +492,18 @@ namespace TurkcellBank.Web_API.Controllers
 
             var captured = await _paymentService.CaptureAsync(id);
             return Ok(captured);
+        }
+
+        [HttpGet("fxrates")]
+        [AllowAnonymous]
+        public async Task<ActionResult<FXRatesDTO>> GetLatestAsync(
+            [FromQuery] string @base = "TRY",
+            [FromQuery] string symbols = "USD,EUR")
+        {
+            var list = symbols.Split(',', StringSplitOptions.RemoveEmptyEntries |
+                StringSplitOptions.TrimEntries);
+            var dto = await _fxFetcherService.GetLatestAsync(@base, list);
+            return Ok(dto);
         }
     }
 }

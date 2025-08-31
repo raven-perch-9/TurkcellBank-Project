@@ -9,251 +9,95 @@
 @inject IDialogService DialogService
 @inject IJSRuntime JS
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="p-6">
-    <!-- Header -->
-    <MudPaper Class="p-6 mb-4 rounded-2xl payments-header">
-        <MudStack Row AlignItems="center" Justify="space - between" Spacing="2">
-            <MudStack Row AlignItems="center" Spacing="2">
-                <MudIcon Icon="@Icons.Material.Filled.CreditCard" Size="Large" />
-                <MudText Typo="Typo.h5" Class="font-semibold">Payment Operations</MudText>
-            </MudStack>
-            <MudText Class="muted">Initiate → Verify 3DS → Capture</MudText>
-        </MudStack>
+<div style="padding-top:10px;">
+    <MudPaper Class="p-4" Style="border-radius:20px; max-width:500px; margin-left:30px;">
+        <MudText Typo="Typo.h3" Class="mb-4">Ödeme Ekranı</MudText>
+
+        <MudText Typo="Typo.h6" Class="mb-4">Order ID</MudText>
+        <MudNumericField T="int" @bind-Value="model.OrderId" Label="" Variant="Variant.Outlined" Min="1"
+                         Step="1" Immediate="true" Class="mb-3" />
+        <MudText Typo="Typo.h6" Class="mb-4">Ödeme Tutarı</MudText>
+        <MudNumericField T="decimal" @bind-Value="model.Amount" Label="" Variant="Variant.Outlined" Min="0.01m"
+                         Step="0.01m" Immediate="true" Class="mb-3" />
+        <MudText Typo="Typo.h6" Class="mb-4">Para Birimi</MudText>
+        <MudSelect @bind-Value="model.Currency" Label="" Variant="Variant.Outlined">
+            @foreach (var currency in currencyTypes)
+            {
+                <MudSelectItem Value="@currency">@currency</MudSelectItem>
+            }
+        </MudSelect>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="PaymentRequest">ONAY</MudButton>
     </MudPaper>
+</div>
 
-    <MudTabs Elevation="0" Rounded="true" RoundedEdges="true" PanelClass="mt-4">
-        <!-- TAB 1: INITIATE -->
-        <MudTabPanel Text="Initiate" Icon="@Icons.Material.Filled.PlayArrow">
-            <MudPaper Class="p-5 rounded-2xl">
-                <MudForm @ref="_initForm" Model="_initModel" Immediate="true" Validation="InitValidation">
-                    <MudStack Spacing="2">
-                        <MudText Typo="Typo.subtitle1" Class="font-semibold">Payment Details</MudText>
+@code
+{
+    MudForm form = new();
+    private PaymentRequestModel model = new();
+    string[] errors = { };
 
-                        <MudTextField @bind-Value="_initModel.OrderId" Label="Order ID" Required="true" />
-                        <MudTextField @bind-Value="_initModel.Amount" Label="Amount" Required="true" InputType="InputType.Number" />
-
-                        <MudSelect T="string" Label="Currency" @bind-Value="_initModel.CurrencyCode" Required="true">
-                            <MudSelectItem Value="TRY">TRY ₺</MudSelectItem>
-                            <MudSelectItem Value="USD">USD $</MudSelectItem>
-                            <MudSelectItem Value="EUR">EUR €</MudSelectItem>
-                        </MudSelect>
-
-                        <MudDivider Class="my-2" />
-                        <MudText Typo="Typo.subtitle2" Class="font-semibold">Card</MudText>
-
-                        <MudTextField @bind-Value="_initModel.CardHolderName" Label="Cardholder Name" Required="true" />
-                        <MudTextField @bind-Value="_initModel.CardNumber" Label="Card Number" Required="true" Mask="0000 0000 0000 0000" />
-                        <MudStack Row Spacing="2">
-                            <MudTextField @bind-Value="_initModel.ExpMonth" Label="MM" Required="true" MaxLength="2" />
-                            <MudTextField @bind-Value="_initModel.ExpYear" Label="YY" Required="true" MaxLength="2" />
-                            <MudTextField @bind-Value="_initModel.Cvv" Label="CVV" Required="true" MaxLength="4" InputType="InputType.Password" />
-                        </MudStack>
-
-                        <MudStack Row Justify="space - between" AlignItems="center">
-                            <MudButton Variant="Filled" Color="Primary" OnClick="StartPayment" Disabled="_busyInit" Class="action-btn">
-                                @if (_busyInit)
-                                {
-                                    <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="mr-2" />
-                                }
-                                Start Payment
-                            </MudButton>
-                            <MudText Class="muted">Dev hint: shows 3DS debug code when available</MudText>
-                        </MudStack>
-
-                        @if (_lastInitResponse is not null)
-                        {
-                            <MudAlert Severity="Severity.Info" Variant="Variant.Filled" Dense="true" Class="mt-3">
-                                <MudStack Spacing="1">
-                                    <MudText>PaymentId: <b>@_lastInitResponse.PaymentId</b></MudText>
-                                    <MudText>Status: <b>@_lastInitResponse.Status</b></MudText>
-                                    @if (!string.IsNullOrWhiteSpace(_lastInitResponse.DebugThreeDSCode))
-                                    {
-                                        <MudText>3DS Debug Code: <b>@_lastInitResponse.DebugThreeDSCode</b></MudText>
-                                    }
-                                </MudStack>
-                            </MudAlert>
-                        }
-                    </MudStack>
-                </MudForm>
-            </MudPaper>
-        </MudTabPanel>
-
-        <!-- TAB 2: 3DS VERIFY -->
-        <MudTabPanel Text="Verify 3DS" Icon="@Icons.Material.Filled.VerifiedUser">
-            <MudPaper Class="p-5 rounded-2xl">
-                <MudForm @ref="_verifyForm" Model="_verifyModel" Immediate="true" Validation="VerifyValidation">
-                    <MudStack Spacing="2">
-                        <MudText Typo="Typo.subtitle1" Class="font-semibold">Enter your 3DS code</MudText>
-
-                        <MudTextField @bind-Value="_verifyModel.PaymentId" Label="Payment ID" Required="true" />
-                        <MudTextField @bind-Value="_verifyModel.Code" Label="3DS Code" Required="true" MaxLength="8" />
-
-                        <MudButton Variant="Filled" Color="Secondary" OnClick="Verify3DS" Disabled="_busyVerify" Class="action-btn">
-                            @if (_busyVerify)
-                            {
-                                <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="mr-2" />
-                            }
-                            Verify
-                        </MudButton>
-
-                        @if (_lastVerifyResponse is not null)
-                        {
-                            <MudAlert Severity="Severity.Success" Variant="Variant.Filled" Dense="true" Class="mt-3">
-                                <MudText>Status: <b>@_lastVerifyResponse.Status</b></MudText>
-                            </MudAlert>
-                        }
-                    </MudStack>
-                </MudForm>
-            </MudPaper>
-        </MudTabPanel>
-
-        <!-- TAB 3: CAPTURE -->
-        <MudTabPanel Text="Capture" Icon="@Icons.Material.Filled.LockOpen">
-            <MudPaper Class="p-5 rounded-2xl">
-                <MudForm @ref="_captureForm" Model="_captureModel" Immediate="true" Validation="CaptureValidation">
-                    <MudStack Spacing="2">
-                        <MudText Typo="Typo.subtitle1" Class="font-semibold">Finalize the transaction</MudText>
-
-                        <MudTextField @bind-Value="_captureModel.PaymentId" Label="Payment ID" Required="true" />
-
-                        <MudButton Variant="Filled" Color="Success" OnClick="Capture" Disabled="_busyCapture" Class="action-btn">
-                            @if (_busyCapture)
-                            {
-                                <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="mr-2" />
-                            }
-                            Capture
-                        </MudButton>
-
-                        @if (_lastCaptureResponse is not null)
-                        {
-                            <MudAlert Severity="Severity.Info" Variant="Variant.Filled" Dense="true" Class="mt-3">
-                                <MudStack Spacing="1">
-                                    <MudText>Status: <b>@_lastCaptureResponse.Status</b></MudText>
-                                    <MudText>Card: <b>@_lastCaptureResponse.CardMask</b></MudText>
-                                </MudStack>
-                            </MudAlert>
-                        }
-                    </MudStack>
-                </MudForm>
-            </MudPaper>
-        </MudTabPanel>
-    </MudTabs>
-</MudContainer>
-
-@code {
-    private MudForm _initForm, _verifyForm, _captureForm;
-    private bool _busyInit, _busyVerify, _busyCapture;
-
-    // models
-    private PaymentInitiateRequest _initModel = new();
-    private ThreeDSVerifyRequest _verifyModel = new();
-    private CaptureRequest _captureModel = new();
-
-    // last responses
-    private PaymentResponse _lastInitResponse;
-    private PaymentResponse _lastVerifyResponse;
-    private CaptureResponse _lastCaptureResponse;
-
-    // simple validations
-    private IEnumerable<string> InitValidation(object _)
+    private readonly List<string> currencyTypes = new() { "TRY", "USD", "EUR" };
+    private readonly Dictionary<string, int> currencyMap = new()
     {
-        if (string.IsNullOrWhiteSpace(_initModel.CurrencyCode)) yield return "Currency is required.";
-        if (_initModel.Amount <= 0) yield return "Amount must be greater than zero.";
-        if (string.IsNullOrWhiteSpace(_initModel.CardNumber)) yield return "Card number is required.";
-        if (string.IsNullOrWhiteSpace(_initModel.ExpMonth) || string.IsNullOrWhiteSpace(_initModel.ExpYear)) yield return "Expiry is required.";
-        if (string.IsNullOrWhiteSpace(_initModel.Cvv)) yield return "CVV is required.";
-        if (string.IsNullOrWhiteSpace(_initModel.CardHolderName)) yield return "Cardholder name is required.";
-    }
+        ["TRY"] = 1,
+        ["USD"] = 2,
+        ["EUR"] = 3
+    };
 
-    private IEnumerable<string> VerifyValidation(object _)
+    private bool CanOpen => !string.IsNullOrWhiteSpace(model.Currency) &&
+                            model.Amount > 0m &&
+                            model.OrderId > 0;
+
+    protected override async Task OnInitializedAsync()
     {
-        if (string.IsNullOrWhiteSpace(_verifyModel.PaymentId)) yield return "Payment ID is required.";
-        if (string.IsNullOrWhiteSpace(_verifyModel.Code)) yield return "3DS code is required.";
-    }
-
-    private IEnumerable<string> CaptureValidation(object _)
-    {
-        if (string.IsNullOrWhiteSpace(_captureModel.PaymentId)) yield return "Payment ID is required.";
-    }
-
-    // actions
-    private async Task StartPayment()
-    {
-        await _initForm.Validate();
-        if (!_initForm.IsValid) return;
-
         try
         {
-            _busyInit = true;
-            var (resp, debug) = await Api.StartPaymentAsync(_initModel);
-            _lastInitResponse = resp;
-            _lastInitResponse.DebugThreeDSCode = debug; // expose for dev
-            Snackbar.Add("Payment initiated.", Severity.Success);
-            // prefills next steps
-            _verifyModel.PaymentId = resp.PaymentId?.ToString();
-            _captureModel.PaymentId = resp.PaymentId?.ToString();
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            }
+            else
+            {
+                Snackbar.Add("Oturum bulunamadı. Lütfen tekrar giriş yapın.", Severity.Warning);
+            }
         }
-        catch (Exception ex)
+        catch(Exception ex)
         {
-            Snackbar.Add(ex.Message, Severity.Error);
+            Snackbar.Add("Bir hata oluştu. Lütfen tekrar giriş yapın.", Severity.Error);
         }
-        finally { _busyInit = false; }
     }
 
-    private async Task Verify3DS()
+    private async Task PaymentRequest()
     {
-        await _verifyForm.Validate();
-        if (!_verifyForm.IsValid) return;
+        if(!CanOpen)
+        {
+            Snackbar.Add("Lütfen geçerli OrderId, para birimi ve tutar giriniz.", Severity.Error);
+        }
+        var body = new
+        {
+            OderId = model.OrderId,
+            Amount = model.Amount,
+            Currency = currencyMap[model.Currency]
+        };
 
-        try
+        var response = await Http.PostAsJsonAsync("api/user/payment-request", body);
+
+        if (response.IsSuccessStatusCode)
         {
-            _busyVerify = true;
-            _lastVerifyResponse = await Api.Verify3DSAsync(_verifyModel);
-            Snackbar.Add("3DS verified.", Severity.Success);
+            Snackbar.Add("Ödeme talebiniz alındı", Severity.Success);
         }
-        catch (Exception ex)
+        else
         {
-            Snackbar.Add(ex.Message, Severity.Error);
+            Snackbar.Add("Ödeme talebiniz alınamadı.", Severity.Error);
         }
-        finally { _busyVerify = false; }
     }
 
-    private async Task Capture()
+    public class PaymentRequestModel
     {
-        await _captureForm.Validate();
-        if (!_captureForm.IsValid) return;
-
-        try
-        {
-            _busyCapture = true;
-            _lastCaptureResponse = await Api.CaptureAsync(_captureModel);
-            Snackbar.Add("Payment captured.", Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add(ex.Message, Severity.Error);
-        }
-        finally { _busyCapture = false; }
+        public int OrderId { get; set; }
+        public decimal Amount { get; set; }
+        public string Currency { get; set; } = string.Empty;
     }
 }
-
-<style>
-    .payments-header {
-        background: linear-gradient(90deg,#154ba3 0%, #1e66e0 100%);
-        color: white;
-        box-shadow: 0 8px 24px rgba(21,75,163,0.25);
-    }
-
-    .muted {
-        opacity: .75;
-    }
-
-    .action-btn {
-        transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
-        border-radius: 12px;
-    }
-
-        .action-btn:hover {
-            transform: translateY(-1px);
-        }
-</style>

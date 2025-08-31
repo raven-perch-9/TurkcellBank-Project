@@ -31,6 +31,13 @@ builder.Services.AddControllers().AddJsonOptions(opts =>
 });
 builder.Services.AddEndpointsApiExplorer();
 
+// FX Rate Fetcher
+builder.Services.AddHttpClient<IFXFetcherService, FXFetcherService>(c =>
+{
+    c.BaseAddress = new Uri("https://open.er-api.com/v6/");
+    c.Timeout = TimeSpan.FromSeconds(10);
+});
+
 // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 // Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -39,7 +46,7 @@ builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 builder.Services.AddScoped<ICreditRepository, CreditRepository>();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 
-// Services
+// Custom Services
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IGenerateIBAN, GenerateIBAN>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
@@ -47,6 +54,7 @@ builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IDisbursementService, DisbursementService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IFXFetcherService, FXFetcherService>();
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 // Swagger Authorize Function
