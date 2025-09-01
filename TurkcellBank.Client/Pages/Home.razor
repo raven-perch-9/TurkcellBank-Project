@@ -6,12 +6,13 @@
 @inject HttpClient Http
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@using System.Text.Json
 
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" DisableGutters="true" Class="p-6 px-0">
 
     <!-- WELCOME HEADER -->
-    <MudPaper Class="mx-auto mb-1" Style="background:white; border-radius:16px; width:100%;">
+    <MudPaper Class="mx-auto mb-1" Style="background:#F5F5F5; border-radius:16px; width:100%;">
         <MudText Typo="Typo.h5" Align="Align.Center" Style="color:black; margin-bottom:20px">
             Hoşgeldiniz, @user?.FullName!
         </MudText>
@@ -58,15 +59,44 @@
             </MudPaper>
         </MudItem>
     </MudGrid>
-    <MudTable 
+    <MudPaper Class="p-4 mt-4" Style="border-radius:20px; height:110px; background:#F5F5F5; overflow:hidden">
+        <MudText Typo="Typo.h5" Class="mb-1" Align="Align.Center" Style="color:#004B93;">Güncel Döviz Kurları</MudText>
+        <MudTable Items="@fxColumn" Hover="true" Dense="true" Height ="110px"
+                  Class="compact-columns" style="background:white; border-radius:12px;">
+            <HeaderContent>
+                <MudTh Style="font-weight:bold">USD</MudTh>
+                <MudTh Style="font-weight:bold">EUR</MudTh>
+                <MudTh Style="font-weight:bold">GBP</MudTh>
+                <MudTh Style="font-weight:bold">Gram Altın</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.USDRate</MudTd>
+                <MudTd>@context.EURRate</MudTd>
+                <MudTd>@context.GBPRate</MudTd>
+                <MudTd>@context.GoldRate</MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudPaper>
 </MudContainer>
 
 
 @code {
+    private decimal EUR_per_TRY;
+    private decimal USD_per_TRY;
+    private decimal GBP_per_TRY;
+    private decimal PLN_per_TRY;
+
+    private decimal TRY_per_USD;
+    private decimal TRY_per_EUR;
+    private decimal TRY_per_GramGold;
+    private decimal PLN_per_GramGold;
+    private decimal TRY_per_GBP;
+
     private UserProfileModel? user;
 
     private bool isLoaded = false;
     private List<AccountRow> accountRows = new();
+    private List<FXColumn> fxColumn = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -74,10 +104,33 @@
         if (!string.IsNullOrWhiteSpace(token))
             Http.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);        
-
         try
         {
             user = await Http.GetFromJsonAsync<UserProfileModel>("api/user/me");
+            var currencyData = await Http.GetFromJsonAsync<JsonElement>("api/user/fxrates");
+            USD_per_TRY = currencyData.GetProperty("rates").GetProperty("USD").GetDecimal();
+            EUR_per_TRY = currencyData.GetProperty("rates").GetProperty("EUR").GetDecimal();
+            PLN_per_TRY = currencyData.GetProperty("rates").GetProperty("PLN").GetDecimal();
+            PLN_per_GramGold = currencyData.GetProperty("rates").GetProperty("XAU").GetDecimal();
+            GBP_per_TRY = currencyData.GetProperty("rates").GetProperty("GBP").GetDecimal();
+
+            TRY_per_USD = USD_per_TRY == 0 ? 0 : 1m / USD_per_TRY;
+            TRY_per_EUR = EUR_per_TRY == 0 ? 0 : 1m / EUR_per_TRY;
+            TRY_per_GBP = GBP_per_TRY == 0 ? 0 : 1m / GBP_per_TRY;
+
+            if (PLN_per_TRY <= 0 || PLN_per_GramGold <= 0)
+                throw new InvalidOperationException("Rates not initialized");
+
+            TRY_per_GramGold = PLN_per_GramGold / PLN_per_TRY;
+
+            fxColumn.Add(new FXColumn
+                {
+                     USDRate = TRY_per_USD.ToString("N2") + " TL",
+                     EURRate = TRY_per_EUR.ToString("N2") + " TL",
+                     GBPRate = TRY_per_GBP.ToString("N2") + " TL",
+                     GoldRate = TRY_per_GramGold.ToString("N2") + " TL"
+                });
+
             for (int i = 0; i < user.AccountTypes.Count; i++)
             {
                 if (user.IsActive[i])
@@ -128,10 +181,12 @@
         public decimal Balance { get; set; }
     }
 
-    public class FXRates
+    public class FXColumn
     {
-        public string CurrencyType { get; set; }
-        public decimal Value { get; set; }
+        public string USDRate { get; set; }
+        public string EURRate { get; set; }
+        public string GoldRate { get; set; }
+        public string GBPRate { get; set; }
     }
 }
 

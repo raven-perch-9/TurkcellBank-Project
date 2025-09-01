@@ -7,7 +7,7 @@ using TurkcellBank.Application.User.DTOs;
 using TurkcellBank.Application.User.Services.Interfaces;
 using TurkcellBank.Domain.Entities;
 using TurkcellBank.Domain.Enums;
-using TurkcellBank.Infrastructure.Services;
+using TurkcellBank.Infrastructure.Services.Interfaces;
 
 namespace TurkcellBank.Web_API.Controllers
 {
@@ -187,20 +187,20 @@ namespace TurkcellBank.Web_API.Controllers
 
             var user = await _users.GetByIdAsync(userId);
             if (user == null)
-                return NotFound("User not found");
+                return NotFound("Kullanıcı bulunamadı.");
 
             var account = user.Accounts.FirstOrDefault(a => a.ID == accountId);
             if (account == null)
-                return NotFound("Account not found.");
+                return NotFound("Hesap bulunamadı.");
             if (!account.IsActive)
-                return BadRequest("Account is already closed.");
+                return BadRequest("Hesap zaten kapalı.");
             if (account.Balance > 0)
-                return BadRequest("Account must be empty before closing.");
+                return BadRequest("Hesabı kapatmak için bakiyenizin 0 olması gerekmektedir.");
 
             account.IsActive = false;
             await _users.SaveChangesAsync();
 
-            return Ok(new { message = "Account closed successfully" });
+            return Ok(new { message = "Hesap kapatıldı" });
         }
 
         [Authorize]
@@ -218,7 +218,7 @@ namespace TurkcellBank.Web_API.Controllers
                     return Unauthorized("Invalid token: missing user_id");
                 var user = await _users.GetByIdAsync(userId);
                 if (user == null)
-                    return NotFound("User not found");
+                    return NotFound("Kullanıcı bulunamadı");
 
                 if (!Enum.IsDefined(typeof(AccountType), dto.AccountType))
                     return BadRequest(new { success = false, message = "Geçersiz hesap türü." });
@@ -292,11 +292,11 @@ namespace TurkcellBank.Web_API.Controllers
         public async Task<IActionResult> ApplyForCredit([FromBody] CreditApplyDTO dto, CancellationToken ct = default)
         {
             if (dto == null)
-                return BadRequest("Credit application data cannot be null.");
+                return BadRequest("Zorunlu tüm alanları doldurunuz.");
             if (dto.RequestedAmount <= 0)
-                return BadRequest("Requested amount must be greater than zero.");
+                return BadRequest("Sıfırdan daha büyük bir kredi talebi giriniz.");
             if (dto.TermMonths <= 0)
-                return BadRequest("Term months must be greater than zero.");
+                return BadRequest("Geri ödeme süresi sıfırdan büyük olmalıdır.");
 
             var userIdClaim = User.FindFirst("user_id")?.Value;
             if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))

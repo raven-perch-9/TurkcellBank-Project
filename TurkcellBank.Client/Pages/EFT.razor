@@ -10,20 +10,21 @@
 @inject IJSRuntime JS
 
 <div style="padding-top:10px;">
-    <MudPaper Class="p-4" Style="border-radius:20px; max-width:500px; margin-left:30px;">
-        <MudText Typo="Typo.h3" Class="mb-4">EFT İşlemi</MudText>
+    <MudPaper Class="p-2" Style="background:#F5F5F5; border-radius:20px; margin-left:30px; margin-bottom:30px; max-width:960px">
+        <MudText Typo="Typo.h5" Class="mb-4" Style="font-weight:bold; margin-left:15px;">EFT İşlemi</MudText>
 
-        <MudText Typo="Typo.h6" Class="mb-4">Para Gönderen Hesap IBAN Adresi</MudText>
+        <MudText Typo="Typo.h6" Class="ml-4">Para Gönderen Hesap IBAN Adresi</MudText>
         <MudTextField @bind-Value="model.FromAccountIBAN" Label="IBAN giriniz" Variant="Variant.Outlined" Class="mb-3" />
-        <MudText Typo="Typo.h6" Class="mb-4">Paranın Gönderileceği Hesabın IBAN Adresi</MudText>
+        <MudText Typo="Typo.h6" Class="ml-4">Paranın Gönderileceği Hesabın IBAN Adresi</MudText>
         <MudTextField @bind-Value="model.ToAccountIBAN" Label="IBAN giriniz" Variant="Variant.Outlined" Class="mb-3" />
-        <MudText Typo="Typo.h6" Class="mb-4">Gönderilecek Miktar</MudText>
+        <MudText Typo="Typo.h6" Class="ml-4">Gönderilecek Miktar</MudText>
         <MudNumericField T="decimal" @bind-Value="model.Amount" Label="Tutar giriniz" Variant="Variant.Outlined" Min="0.01m"
                          Step="0.01m" Immediate="true" Class="mb-3" />
-        <MudText Typo="Typo.h6" Class="mb-4">Açıklama Giriniz (İsteğe Bağlı) </MudText>
+        <MudText Typo="Typo.h6" Class="ml-4">Açıklama Giriniz (İsteğe Bağlı) </MudText>
         <MudTextField @bind-Value="model.Description" Label="Açıklama" Variant="Variant.Outlined" Class="mb-3" />
 
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="TransferRequest">ONAY</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="TransferRequest" 
+            Style="margin-top:10px; margin-left:30px; min-width:150px;">ONAY</MudButton>
     </MudPaper>
 </div>
 
@@ -52,8 +53,9 @@
         {
             Snackbar.Add(validationMessage ?? "Banka içi transferler için havale sayfasının kullanın.", Severity.Error);
             return;
-		}
+        }
         var response = await Http.PostAsJsonAsync("api/user/transfer", model);
+        model = new TransferRequestModel();
 
         if (response.IsSuccessStatusCode)
         {

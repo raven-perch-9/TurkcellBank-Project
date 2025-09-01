@@ -9,21 +9,21 @@
 @inject IJSRuntime JS
 @inject NavigationManager Nav
 
-<MudGrid>
+<MudGrid >
     <MudItem xs="12" sm="7">
-		<MudPaper Class="pa-4">
-            <MudText Typo="Typo.h4" Class="mb-4">Hesap Açımı</MudText>
+        <MudPaper Class="pa-2" Style="background:#F5F5F5; border-radius:16px; width:100%;">
+            <MudText Typo="Typo.h5" Class="mb-4">Hesap Açımı</MudText>
             <MudForm Model="@newAccount" @ref="form" @bind-IsValid="@success"
             @bind-Errors="@errors">
 
-                <MudSelect @bind-Value="newAccount.AccountType" Label="Hesap Türü" Variant="Variant.Outlined">
+                <MudSelect @bind-Value="newAccount.AccountType" Label="Hesap Türü" Variant="Variant.Outlined" Style="background:white;">
                     @foreach (var type in accountTypes)
                     {
                         <MudSelectItem Value="@type">@type</MudSelectItem>
                     }
                 </MudSelect>
 
-                <MudSelect @bind-Value="newAccount.CurrencyCode" Label="Para Birimi" Variant="Variant.Outlined">
+                <MudSelect @bind-Value="newAccount.CurrencyCode" Label="Para Birimi" Variant="Variant.Outlined" Style="background:white;">
                     @foreach (var currency in currencyTypes)
                     {
                         <MudSelectItem Value="@currency">@currency</MudSelectItem>

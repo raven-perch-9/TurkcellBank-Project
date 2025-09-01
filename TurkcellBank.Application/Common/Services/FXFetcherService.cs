@@ -23,6 +23,14 @@ namespace TurkcellBank.Application.Common.Services
             var json = await resp.Content.ReadFromJsonAsync<ExHostLatest>();
             if (json == null || json.rates == null) throw new InvalidOperationException("No FX data found.");
 
+            var goldArr = await _http.GetFromJsonAsync<GoldItem[]>(
+                "https://api.nbp.pl/api/cenyzlota/last/1/?format=json")
+                ?? throw new InvalidOperationException("Data cannot be fetched from provider");
+            if (goldArr is null || goldArr.Length == 0)
+                throw new InvalidOperationException("No gold data found.");
+            decimal plnPerGram = goldArr[0].cena;
+            json.rates["XAU"] = plnPerGram;
+
             return new FXRatesDTO(
                 json.@base.ToUpperInvariant(),
                 DateTimeOffset.UtcNow,
@@ -34,6 +42,12 @@ namespace TurkcellBank.Application.Common.Services
         {
             public string @base { get; set; } = "EUR";
             public Dictionary<string, decimal> rates { get; set; } = new();
+        }
+
+        private sealed class GoldItem
+        {
+            public string? data { get; set; }  
+            public decimal cena { get; set; } 
         }
     }
 }

@@ -1,21 +1,15 @@
 ﻿using System.Data;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using TurkcellBank.Application.Common.DTOs;
 using TurkcellBank.Domain.Entities;
 using TurkcellBank.Domain.Enums;
 using TurkcellBank.Infrastructure.Data;
+using TurkcellBank.Infrastructure.Services.Interfaces;
 
 
 namespace TurkcellBank.Infrastructure.Services
 {
-    //Temporary Interface 
-    public interface ITransactionService
-    {
-        Task<TransactionDTO> TransferAsync(int userID, TransferRequestDTO req, CancellationToken ct = default);
-        Task<IReadOnlyList<TransactionDTO>> GetHistorysAsync(int userID, string? IBAN = null,
-            DateTime? from = null, DateTime? to = null, CancellationToken ct = default);
-    }
-
     //Actual Service
     public class TransactionService : ITransactionService
     {
@@ -46,17 +40,70 @@ namespace TurkcellBank.Infrastructure.Services
             var to = await _db.Accounts
                 .AsTracking()
                 .Include(a => a.User)
-                .FirstOrDefaultAsync(a => a.IBAN == req.ToAccountIBAN, ct)
-                ?? throw new ArgumentException("Destination account is not found", nameof(req.ToAccountIBAN));
+                .FirstOrDefaultAsync(a => a.IBAN == req.ToAccountIBAN, ct);
 
-            if (!to.IsActive) throw new InvalidOperationException("Destination account is not active.");
+            //EFT HAPPENS INSIDE IF SCOPE
+            if (to is null)
+            {
+                var toExternal = await _db.ExternalAccounts
+                    .AsTracking()
+                    .FirstOrDefaultAsync(e => e.IBAN == req.ToAccountIBAN, ct);
+
+                if (toExternal is null) throw new ArgumentException("Hedef hesap bulunamadı.", nameof(req.ToAccountIBAN));
+                if (!toExternal.IsActive) throw new InvalidOperationException("Hedef hesap bulunamadı.");
+
+                if ((int)from.CurrencyCode != toExternal.CurrencyCode)
+                {
+                    throw new InvalidOperationException("Hesapların para birimleri farklıdır.");
+                }
+                if (from.Balance < req.Amount)
+                    throw new InvalidOperationException("Yeterli bakiyeniz bulunmamaktadır.");
+                var transfertype = TransferType.EFT;
+
+                await using var trx = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+
+                from.Balance -= req.Amount;
+                toExternal.Balance += req.Amount;
+
+                var exentity = new Transaction
+                {
+                    FromAccountID = from.ID,
+                    ToAccountID = toExternal.ID,
+                    Amount = req.Amount,
+                    Description = req.Description,
+                    CreatedAt = DateTime.UtcNow,
+                    ReferenceCode = Guid.NewGuid().ToString("N"),
+                    Type = transfertype,
+                    Status = TransactionStatus.Completed
+                };
+
+                _db.Transactions.Add(exentity);
+                await _db.SaveChangesAsync(ct);
+                await trx.CommitAsync(ct);
+
+                return new TransactionDTO
+                {
+                    ID = exentity.ID,
+                    ReferenceCode = exentity.ReferenceCode,
+                    CreatedAt = exentity.CreatedAt,
+                    FromAccountIBAN = from.IBAN,
+                    ToAccountIBAN = toExternal.IBAN,
+                    Amount = exentity.Amount,
+                    Description = exentity.Description,
+                    Type = exentity.Type,
+                    Status = exentity.Status
+                };
+            }
+            
+            // HAVALE FOR BELOW IS USED
+            if (!to.IsActive) throw new InvalidOperationException("Hedef hesap bulunamadı.");
 
             //Business logic checks
             if (from.CurrencyCode != to.CurrencyCode)
-                throw new InvalidOperationException("Cross currency transfers are not allowed.");
+                throw new InvalidOperationException("Hesapların para birimleri farklıdır.");
             if (from.Balance < req.Amount)
-                throw new InvalidOperationException("Insufficient balance in source account.");
-            var type = (from.UserID == to.UserID) ? TransferType.Havale : TransferType.EFT;
+                throw new InvalidOperationException("Yeterli bakiyeniz bulunmamaktadır.");
+            var type = TransferType.Havale;
 
             // Atomic balance update + transaction insertion
             await using var tx = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);

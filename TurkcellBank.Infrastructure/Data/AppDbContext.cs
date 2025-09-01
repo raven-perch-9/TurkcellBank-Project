@@ -10,6 +10,7 @@ namespace TurkcellBank.Infrastructure.Data
             : base(options) { }
         public DbSet<User> Users { get; set; }
         public DbSet<Account> Accounts { get; set; }
+        public DbSet<ExternalAccount> ExternalAccounts { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
         public DbSet<CreditApplication> CreditApplications { get; set; }
         public DbSet<CreditInstallment> CreditInstallments { get; set; }

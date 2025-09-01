@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Swashbuckle.AspNetCore.Annotations;
 using System.Text;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
@@ -11,6 +10,7 @@ using TurkcellBank.Application.Common.Abstractions;
 using TurkcellBank.Application.Common.Services.Interfaces;
 using TurkcellBank.Application.Common.Services;
 using TurkcellBank.Infrastructure.Data;
+using TurkcellBank.Infrastructure.Services.Interfaces;
 using TurkcellBank.Infrastructure.Services;
 using TurkcellBank.Infrastructure.Options;
 using TurkcellBank.Infrastructure.Data.Repositories;
@@ -45,6 +45,7 @@ builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 builder.Services.AddScoped<ICreditRepository, CreditRepository>();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<IExternalAccountRepository, ExternalAccountRepository>();
 
 // Custom Services
 builder.Services.AddScoped<IJwtService, JwtService>();
