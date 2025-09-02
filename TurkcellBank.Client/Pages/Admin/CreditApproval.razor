@@ -1,0 +1,94 @@
+﻿@page "/credit-approve/{ApplicationID:int}"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+@layout MainLayout
+@using MudBlazor
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+<MudGrid>
+    <MudItem xs="12" sm="7">
+        <MudPaper Class="pa-2" Style="background:#F5F5F5; border-radius:16px; width:100%;">
+            <MudText Typo="Typo.h5" Class="mb-4">Kredi Başvurusu Onay Sayfası</MudText>
+            <MudForm Model="@newAnswer" @ref="form" @bind-IsValid="@success"
+                     @bind-Errors="@errors">
+                <MudNumericField T="decimal" @bind-Value="newAnswer.AcceptedAmount" Label="Tutar giriniz" Variant="Variant.Outlined" Min="0.01m"
+                                 Step="0.01m" Immediate="true" Class="mb-3" />
+                <MudNumericField T="int" @bind-Value="newAnswer.TermMonths" Label="Tutar giriniz" Variant="Variant.Outlined" Min="1"
+                                 Step="1" Immediate="true" Class="mb-3" />
+                <MudNumericField T="decimal" @bind-Value="newAnswer.AnnualRate" Label="Tutar giriniz" Variant="Variant.Outlined" Min="0.01m"
+                                 Step="0.01m" Immediate="true" Class="mb-3" />
+                <MudTextField @bind-Value="newAnswer.DecisionNote" Label="Onay Notu" Variant="Variant.Outlined" Class="mb-3" />
+
+                    <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="@NewAnswerAsync">
+                        Yanıtla
+                    </MudButton>
+              
+            </MudForm>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    [Parameter] public int ApplicationID { get; set; }
+    MudForm form = new();
+    bool success;
+    string[] errors = { };
+
+    private CreditApprovalModel newAnswer = new();
+
+    private async Task NewAnswerAsync()
+    {
+        await form.Validate();
+
+        if (!success)
+        {
+            Snackbar.Add("Lütfen tüm zorunlu alanları doldurunuz.", Severity.Warning);
+            return;
+        }
+        try
+        {
+            var payload = new CreditApprovalModel
+            {
+                AcceptedAmount = newAnswer.AcceptedAmount,
+                TermMonths = newAnswer.TermMonths,
+                AnnualRate = newAnswer.AnnualRate,
+                Status = 1,
+                DecidedAt = DateTime.UtcNow,
+                DecisionBy = "admin",
+                DecisionNote = string.IsNullOrWhiteSpace(newAnswer.DecisionNote) ? "Onaylandı." : newAnswer.DecisionNote
+            };
+            var resp = await Http.PostAsJsonAsync($"/api/user/credit-approve/{ApplicationID}", payload);
+
+            if (resp.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Başvuru onaylandı.", Severity.Success);
+                newAnswer = new();               
+            }
+            else
+            {
+                var error = await resp.Content.ReadAsStringAsync();
+                Snackbar.Add($"Onay hatası: {error}", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"API hatası: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private class CreditApprovalModel
+    {
+        public decimal AcceptedAmount { get; set; }
+        public int TermMonths { get; set; }
+        public decimal AnnualRate { get; set; }
+        public int Status { get; set; }
+
+        public DateTime? DecidedAt { get; set; }
+        public string? DecisionBy { get; set; }
+        public string? DecisionNote { get; set; }
+    }
+}

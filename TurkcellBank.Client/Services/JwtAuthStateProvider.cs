@@ -58,13 +58,11 @@ namespace TurkcellBank.Client.Services
             string token;
             try
             {
-                // Try to parse JSON { "token": "..." }
                 using var doc = JsonDocument.Parse(responseContent);
                 token = doc.RootElement.GetProperty("token").GetString() ?? string.Empty;
             }
             catch
             {
-                // Fallback: treat it as raw token
                 token = responseContent;
             }
 
@@ -97,6 +95,32 @@ namespace TurkcellBank.Client.Services
         {
             base64 = base64.Replace('-', '+').Replace('_', '/');
             return Convert.FromBase64String(base64.PadRight(base64.Length + (4 - base64.Length % 4) % 4, '='));
+        }
+
+        public async Task<string?> GetRoleAsync()
+        {
+            try
+            {
+                var token = await _js.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+                if (string.IsNullOrWhiteSpace(token))
+                    return null;
+
+                var payload = DecodeJwtPayload(token); // your existing method
+
+                if (payload.TryGetValue("http://schemas.microsoft.com/ws/2008/06/identity/claims/role", out var roleObj))
+                    return roleObj?.ToString();
+
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+        public async Task<bool> IsAdminAsync()
+        {
+            var role = await GetRoleAsync();
+            return string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

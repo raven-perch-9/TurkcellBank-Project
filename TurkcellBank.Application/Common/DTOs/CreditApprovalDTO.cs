@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using TurkcellBank.Domain.Enums;
 
 namespace TurkcellBank.Application.Common.DTOs
 {
@@ -11,6 +7,7 @@ namespace TurkcellBank.Application.Common.DTOs
         public decimal AcceptedAmount { get; set; }
         public int TermMonths { get; set; }
         public decimal AnnualRate { get; set; }
+        public CreditStatus Status { get; set; }
 
         // Optional (nullable)
         public DateTime? DecidedAt { get; set; }

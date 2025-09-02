@@ -6,6 +6,8 @@
 @inject HttpClient Http
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="p-6">
 
@@ -29,6 +31,16 @@
                 <MudTd Align="Right">@context.RequestedAmount.ToString("N2")</MudTd>
                 <MudTd>@context.TermMonths mo</MudTd>
                 <MudTd>@context.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</MudTd>
+                <MudTd>
+                    <MudButton Color="Color.Success" Variant="Variant.Filled" Size="Size.Small" Class="mr-2"
+                               OnClick="@(() => ApproveRequest(context.ID))">
+                        Onay
+                    </MudButton>
+                    <MudButton Color="Color.Error" Variant="Variant.Filled" Size="Size.Small"
+                               OnClick="@(() => DeclineRequest(context.ID))">
+                        Red
+                    </MudButton>
+                </MudTd>
             </RowTemplate>
             <NoRecordsContent>
                 <MudText Class="mud-text-secondary">No pending applications.</MudText>
@@ -101,6 +113,45 @@
         StateHasChanged();
     }
 
+    private void ApproveRequest(int id)
+    {
+        Nav.NavigateTo($"/credit-approve/{id}");
+    }
+
+    private async Task DeclineRequest(int id)
+    {
+        try
+        {
+                var payload = new CreditApprovalModel
+                {
+                    Status = 2, // declined
+                    DecidedAt = DateTime.UtcNow,
+                    DecisionNote = "Başvuru reddedildi.",
+                    DecisionBy = "admin",
+                    AcceptedAmount = 0,
+                    TermMonths = 0,
+                    AnnualRate = 0
+                };
+                var resp = await Http.PostAsJsonAsync($"/api/user/credit-approve/{id}", payload);
+
+            if (resp.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Başvuru reddedildi.", Severity.Success);
+                await GetAllCreditApplications();
+            }
+            else
+            {
+                var err = await resp.Content.ReadAsStringAsync();
+                Snackbar.Add($"Reddetme hatası: {err}", Severity.Error);
+            }
+
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"API hatası: {ex.Message}", Severity.Error);
+        }
+    }
+
     private static string DisplayStatus(string s) => s switch
     {
         "0" => "Pending",
@@ -129,8 +180,20 @@
         public DateTime CreatedAt { get; set; }
         public DateTime? DecidedAt { get; set; }
         public string? DecisionBy { get; set; }
-		public string? DecisionNote { get; set; }
-		public DateTime? DisbursedAt { get; set; }
+        public string? DecisionNote { get; set; }
+        public DateTime? DisbursedAt { get; set; }
+    }
+
+    private class CreditApprovalModel
+    {
+        public decimal? AcceptedAmount { get; set; }
+        public int? TermMonths { get; set; }
+        public decimal? AnnualRate { get; set; }
+        public int Status { get; set; }
+
+        public DateTime? DecidedAt { get; set; }
+        public string? DecisionBy { get; set; }
+        public string? DecisionNote { get; set; }
     }
 }
 

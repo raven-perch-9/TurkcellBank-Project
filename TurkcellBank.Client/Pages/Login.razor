@@ -77,12 +77,19 @@
             if (response.IsSuccessStatusCode)
             {
                 var token = await response.Content.ReadAsStringAsync();
+
                 var jwtProvider = (JwtAuthStateProvider)AuthStateProvider;
                 await jwtProvider.MarkUserAsAuthenticated(token);
+
+                var role = await jwtProvider.GetRoleAsync();
                 message = "Login successful. Redirecting...";
                 isSuccess = true;
                 await Task.Delay(200);
-                Nav.NavigateTo("/home");
+
+                if (string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))
+                    Nav.NavigateTo("/admin", forceLoad: true);
+                else
+                    Nav.NavigateTo("/home");
             }
             else
             {
