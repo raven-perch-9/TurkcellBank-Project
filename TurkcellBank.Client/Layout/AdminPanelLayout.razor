@@ -33,49 +33,21 @@
         <MudNavMenu>
             <!-- Section: İşlem Listesi -->
             <MudText Class="ml-6 mt-6 mb-6" Style="color:black; font-weight:bold;">İşlem Listesi</MudText>
-            <!-- Hesap İşlemleri -->
-            <MudText Class="ml-6 mt-2 mb-0" Style="color:black; cursor:pointer; display:block;" @onclick="ToggleHesap">
-                Hesap İşlemleri
-            </MudText>
-            <MudCollapse Expanded="@_hesapExpanded">
-                <MudText Class="ml-10 mt-2 mb-2" Style="color:black; cursor:pointer; display:block;" @onclick="@(() => Nav.NavigateTo("/open-account"))">
-                    Hesap Açımı
-                </MudText>
-                <MudText Class="ml-10 mt-2 mb-0" Style="color:black; cursor:pointer; display:block;" @onclick="@(() => Nav.NavigateTo("/close-account"))">
-                    Hesap Kapatma
-                </MudText>
-            </MudCollapse>
-            <!-- Para Transferi -->
-            <MudText Class="ml-6 mt-4 mb-0" Style="color:black; cursor:pointer; display:block;" @onclick="TogglePara">
-                Para Transferi
-            </MudText>
-            <MudCollapse Expanded="@_paraExpanded">
-                <MudText Class="ml-10 mt-2 mb-2" Style="color:black; cursor:pointer; display:block;" @onclick="@(() => Nav.NavigateTo("/havale"))">
-                    Havale İşlemleri
-                </MudText>
-                <MudText Class="ml-10 mt-2 mb-2" Style="color:black; cursor:pointer; display:block;" @onclick="@(() => Nav.NavigateTo("/eft"))">
-                    EFT İşlemleri
-                </MudText>
-            </MudCollapse>
-            <!-- Kredi Başvurusu -->
-            <MudText Class="ml-6 mt-4 mb-4" Style="color:black; cursor:pointer; display:block;" @onclick="@(() => 
-                                            { ToggleAll(); Nav.NavigateTo("/credit-apply"); })">
-                Kredi Başvurusu
-            </MudText>
+            
             <!-- Bilgi Güncelleme -->
             <MudText Class="ml-6 mt-4 mb-4" Style="color:black; cursor:pointer; display:block;" @onclick="@(() => 
-                                            { ToggleAll(); Nav.NavigateTo("/update"); })">
+                                            { Nav.NavigateTo("/update"); })">
                 Bilgi Güncelleme
             </MudText>
             <!-- Ödeme İşlemleri -->
             <MudText Class="ml-6 mt-4 mb-4" Style="color:black; cursor:pointer; display:block;" @onclick="@(() =>
-                                            { ToggleAll(); Nav.NavigateTo("/payment"); })"> 
+                                            { })"> 
                 Ödeme İşlemleri
             </MudText>
 
             <MudDivider Class="my-2" />
             <!-- Main navigation -->
-            <MudNavLink Href="/home" Icon="@Icons.Material.Filled.Dashboard" Match="NavLinkMatch.All" Style="color:black; margin-top:10px;">
+            <MudNavLink Href="/admin" Icon="@Icons.Material.Filled.Dashboard" Match="NavLinkMatch.All" Style="color:black; margin-top:10px;">
                 Ana Sayfam
             </MudNavLink>
             <MudNavLink Href="/settings" Icon="@Icons.Material.Filled.Settings" Match="NavLinkMatch.All" Style="color:black;">
@@ -90,26 +62,7 @@
 </MudLayout>
 
 @code {
-    private bool _hesapExpanded;
-    private bool _paraExpanded;
 
-    private void ToggleHesap()
-    {
-        _hesapExpanded = !_hesapExpanded;
-        _paraExpanded = false;
-        Console.WriteLine("CLICKED");
-    }
-    private void TogglePara()
-    {
-        _paraExpanded = !_paraExpanded;
-        _hesapExpanded = false;
-        Console.WriteLine("CLICKED");
-    }
-    private void ToggleAll()
-    {
-        _paraExpanded = false;
-        _hesapExpanded = false;
-    }
     private async Task Logout()
     {
         await JS.InvokeVoidAsync("sessionStorage.removeItem", "authToken");

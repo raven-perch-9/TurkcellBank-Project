@@ -356,6 +356,11 @@ namespace TurkcellBank.Web_API.Controllers
             if (app.Status != CreditStatus.Pending)
                 return BadRequest(new { success = false, message = "Only pending applications can be approved." });
 
+            if (dto.AcceptedAmount <= 0 && dto.Status != CreditStatus.Rejected)
+                return BadRequest(new { success = false, message = "Accepted amount must be greater than zero." });
+            if (dto.TermMonths <= 0 && dto.Status != CreditStatus.Rejected)
+                return BadRequest(new { success = false, message = "Term months must be greater than zero." });
+
             app.Status = CreditStatus.Approved;
             app.AcceptedAmount = dto.AcceptedAmount;
             app.TermMonths = dto.TermMonths;

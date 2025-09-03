@@ -1,7 +1,7 @@
 ﻿@page "/credit-approve/{ApplicationID:int}"
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Admin")]
-@layout MainLayout
+@layout AdminPanelLayout
 @using MudBlazor
 @inject HttpClient Http
 @inject ISnackbar Snackbar
@@ -12,20 +12,24 @@
 <MudGrid>
     <MudItem xs="12" sm="7">
         <MudPaper Class="pa-2" Style="background:#F5F5F5; border-radius:16px; width:100%;">
-            <MudText Typo="Typo.h5" Class="mb-4">Kredi Başvurusu Onay Sayfası</MudText>
-            <MudForm Model="@newAnswer" @ref="form" @bind-IsValid="@success"
-                     @bind-Errors="@errors">
-                <MudNumericField T="decimal" @bind-Value="newAnswer.AcceptedAmount" Label="Tutar giriniz" Variant="Variant.Outlined" Min="0.01m"
+            <MudText Typo="Typo.h5" Style="font-weight:bold" Class="mb-4">Kredi Başvurusu Onay Sayfası</MudText>
+            <MudForm Model="newAnswer" @ref="form" OnValidSubmit="SubmitAsync">
+                <MudText Typo="Typo.h6" Class="ml-4">Kabul Edilen Kredi Tutarı</MudText>
+                <MudNumericField T="decimal" @bind-Value="newAnswer.AcceptedAmount" Label="Tutar" Variant="Variant.Outlined" Min="0.00m"
                                  Step="0.01m" Immediate="true" Class="mb-3" />
-                <MudNumericField T="int" @bind-Value="newAnswer.TermMonths" Label="Tutar giriniz" Variant="Variant.Outlined" Min="1"
+                <MudText Typo="Typo.h6" Class="ml-4">Geri Ödeme Süresi</MudText>
+                <MudNumericField T="int" @bind-Value="newAnswer.TermMonths" Label="Süre" Variant="Variant.Outlined" Min="0"
                                  Step="1" Immediate="true" Class="mb-3" />
-                <MudNumericField T="decimal" @bind-Value="newAnswer.AnnualRate" Label="Tutar giriniz" Variant="Variant.Outlined" Min="0.01m"
+                <MudText Typo="Typo.h6" Class="ml-4">Faiz Oranı</MudText>
+                <MudNumericField T="decimal" @bind-Value="newAnswer.AnnualRate" Label="Oran" Variant="Variant.Outlined" Min="0.00m"
                                  Step="0.01m" Immediate="true" Class="mb-3" />
+				<MudText Typo="Typo.h6" Class="ml-4"> Onay Notu (İsteğe Bağlı)</MudText>
                 <MudTextField @bind-Value="newAnswer.DecisionNote" Label="Onay Notu" Variant="Variant.Outlined" Class="mb-3" />
 
-                    <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="@NewAnswerAsync">
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" Class="mt-4" Type="Submit" OnClick="NewAnswerAsync"
+                           Disabled="@_submitting" Loading="@_submitting">
                         Yanıtla
-                    </MudButton>
+                </MudButton>
               
             </MudForm>
         </MudPaper>
@@ -34,23 +38,36 @@
 
 @code {
     [Parameter] public int ApplicationID { get; set; }
-    MudForm form = new();
-    bool success;
-    string[] errors = { };
+    private MudForm? form;
+    private bool success;
+    private bool _submitting;
+    private string[] errors = Array.Empty<string>();
 
     private CreditApprovalModel newAnswer = new();
 
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (!string.IsNullOrWhiteSpace(token))
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+    }
+
     private async Task NewAnswerAsync()
     {
-        await form.Validate();
+        _submitting = true;
 
-        if (!success)
-        {
-            Snackbar.Add("Lütfen tüm zorunlu alanları doldurunuz.", Severity.Warning);
-            return;
-        }
         try
         {
+            if (form is not null)
+            {
+                await form.Validate();
+                if (!form.IsValid)
+                {
+                    Snackbar.Add("Lütfen tüm alanları doğru şekilde doldurun.", Severity.Warning);
+                    return;
+                }
+            }
             var payload = new CreditApprovalModel
             {
                 AcceptedAmount = newAnswer.AcceptedAmount,
@@ -77,6 +94,10 @@
         catch (Exception ex)
         {
             Snackbar.Add($"API hatası: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _submitting = false;
         }
     }
 
